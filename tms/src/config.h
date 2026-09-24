@@ -1,0 +1,7 @@
+#ifndef CONFIG_H
+#define CONFIG_H
+
+#define SERIAL_BAUD_RATE 115200
+#define DEFAULT_AIR_TEMPERATURE_C 20.0f
+
+#endif
