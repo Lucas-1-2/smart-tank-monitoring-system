@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tank Monitoring Dashboard</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <main class="dashboard-shell">
+        <header class="dashboard-header">
+            <div>
+                <p class="eyebrow">Assignment 03</p>
+                <h1>Tank Monitoring Dashboard</h1>
+                <p class="subtitle">Remote monitoring and manual control</p>
+            </div>
+            <div class="connection-panel" aria-live="polite">
+                <span id="connection-indicator" class="connection-indicator unavailable"></span>
+                <div>
+                    <span id="connection-label">Connecting...</span>
+                    <small id="last-update">Last update: --</small>
+                </div>
+            </div>
+        </header>
+
+        <section class="summary-grid" aria-label="System summary">
+            <article class="summary-card">
+                <span class="card-label">System state</span>
+                <strong id="system-mode" class="card-value status-value">CONNECTING...</strong>
+            </article>
+
+            <article class="summary-card">
+                <span class="card-label">Water level</span>
+                <strong id="water-level" class="card-value">--</strong>
+            </article>
+
+            <article class="summary-card">
+                <span class="card-label">Valve opening</span>
+                <strong id="valve-opening" class="card-value">--</strong>
+            </article>
+        </section>
+
+        <section class="panel controls-panel">
+            <div class="panel-heading">
+                <div>
+                    <p class="eyebrow">Controls</p>
+                    <h2>Operator controls</h2>
+                </div>
+                <span id="request-message" class="request-message" aria-live="polite"></span>
+            </div>
+
+            <div class="controls-grid">
+                <div class="control-block">
+                    <label class="control-title">Operating mode</label>
+                    <button id="mode-button" type="button" disabled>Switch mode</button>
+                    <small id="mode-help">Waiting for CUS state.</small>
+                </div>
+
+                <div class="control-block">
+                    <div class="slider-heading">
+                        <label for="valve-slider" class="control-title">Manual valve opening</label>
+                        <span id="selected-valve-value">Selected: --</span>
+                    </div>
+                    <input id="valve-slider" type="range" min="0" max="100" step="1" value="0" disabled>
+                    <div class="range-labels" aria-hidden="true">
+                        <span>0%</span>
+                        <span>100%</span>
+                    </div>
+                    <small id="valve-help">Available only in MANUAL mode.</small>
+                </div>
+            </div>
+        </section>
+
+        <section class="panel chart-panel">
+            <div class="panel-heading">
+                <div>
+                    <p class="eyebrow">History</p>
+                    <h2>Rainwater level</h2>
+                </div>
+                <span id="chart-status" class="chart-status">Waiting for measurements...</span>
+            </div>
+            <div class="chart-wrapper">
+                <canvas id="water-level-chart" aria-label="Rainwater level chart" role="img"></canvas>
+            </div>
+        </section>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+    <script type="module" src="js/dashboard.js"></script>
+</body>
+</html>
