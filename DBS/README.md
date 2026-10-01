@@ -1,50 +1,87 @@
 # DBS - Dashboard Subsystem
 
-Frontend web for Assignment 03 - Tank Monitoring System.
+Web frontend for Assignment 03 - Tank Monitoring System.
 
 ## Technology
 
-- HTML
-- CSS
-- Vanilla JavaScript
-- Fetch API
-- Chart.js
-- XAMPP / Apache as local web server
+* HTML
+* CSS
+* Vanilla JavaScript
+* Fetch API
+* Chart.js
 
-No frontend framework is required.
+The DBS is served directly by the CUS through the Vert.x HTTP server. No additional web server is required for the integrated system.
 
-## Run with XAMPP
+## Project structure
 
-1. Copy the `dbs` folder into the XAMPP `htdocs` folder, for example:
+```text
+dbs/
+├── index.html
+├── css/
+│   └── style.css
+├── js/
+│   ├── config.js
+│   ├── api.js
+│   ├── chart.js
+│   └── dashboard.js
+└── lib/
+    └── chart.umd.min.js
+```
 
-   `C:\xampp\htdocs\dbs`
+## Run
 
-2. Start Apache from the XAMPP control panel.
-3. Start the CUS backend on the URL configured in `js/config.js`.
-4. Open:
+The `dbs` and `cus` folders must be placed at the same level:
 
-   `http://localhost/dbs/`
+```text
+assignment-03/
+├── cus/
+├── dbs/
+├── tms/
+├── wcs/
+└── doc/
+```
+
+Start the CUS backend and open:
+
+```text
+http://localhost:8080/
+```
+
+The dashboard can also be accessed from another device on the same network using the IP address of the PC running the CUS, for example:
+
+```text
+http://192.168.1.50:8080/
+```
 
 ## Configuration
 
-Edit `js/config.js`:
+The main frontend parameters are defined in `js/config.js`:
 
 ```js
 export const CONFIG = Object.freeze({
-    CUS_BASE_URL: "http://localhost:8080",
+    CUS_BASE_URL: "",
     STATE_POLL_INTERVAL_MS: 1000,
     MEASUREMENTS_POLL_INTERVAL_MS: 1000,
     REQUEST_TIMEOUT_MS: 3000
 });
 ```
 
-`STATE_POLL_INTERVAL_MS` and `MEASUREMENTS_POLL_INTERVAL_MS` are intentionally independent so they can be tuned separately.
+`CUS_BASE_URL` is empty because the DBS and the CUS API are served by the same HTTP server. API requests therefore use relative paths.
 
-## Expected CUS HTTP API
+The state and measurement polling intervals are intentionally independent.
 
-### GET /api/state
+## CUS API
 
-Expected response:
+The DBS expects the following HTTP endpoints:
+
+```text
+GET  /api/state
+GET  /api/measurements
+POST /api/mode
+POST /api/valve
+```
+
+Example state response:
 
 ```json
 {
@@ -54,108 +91,50 @@ Expected response:
 }
 ```
 
-Allowed `mode` values:
+Possible modes are:
 
-- `AUTOMATIC`
-- `MANUAL`
-- `UNCONNECTED`
+* `AUTOMATIC`
+* `MANUAL`
+* `UNCONNECTED`
 
-`valveOpening` and `waterLevel` are percentages in the range 0-100. `waterLevel` may be `null` when the current measurement is not available.
+`waterLevel` may be `null` when no valid measurement is available.
 
-### GET /api/measurements
-
-Expected response:
+Example measurements response:
 
 ```json
 [
   { "timestamp": 1759062000000, "value": 40 },
   { "timestamp": 1759062001000, "value": 44 },
-  { "timestamp": 1759062002000, "value": null },
-  { "timestamp": 1759062003000, "value": 47 }
+  { "timestamp": 1759062002000, "value": null }
 ]
 ```
 
-A `null` measurement is kept as a gap in the graph.
+`null` values are displayed as gaps in the graph.
 
-The CUS is expected to retain and return the last N measurements.
+## Dashboard behaviour
 
-### POST /api/mode
+The CUS is the source of truth for the global system state.
 
-Request body:
+The DBS sends operator requests but updates the displayed mode and valve opening only after receiving the confirmed state from the CUS.
 
-```json
-{
-  "mode": "MANUAL"
-}
-```
+The mode button switches between `AUTOMATIC` and `MANUAL`.
 
-or:
+The valve slider is enabled only in `MANUAL` mode. The new valve value is sent when the slider change is committed.
 
-```json
-{
-  "mode": "AUTOMATIC"
-}
-```
-
-`UNCONNECTED` cannot be requested by the operator.
-
-### POST /api/valve
-
-Request body:
-
-```json
-{
-  "opening": 65
-}
-```
-
-The CUS decides whether the request can be applied. In particular, manual valve requests should only be applied while the global system mode is `MANUAL`.
-
-## Source of truth
-
-The CUS owns the global system state.
-
-The DBS never changes the displayed global state just because the user presses a button or moves the slider. It sends the request to the CUS and then refreshes `/api/state`. The confirmed CUS state is what updates the dashboard.
-
-## Mode button
-
-The HTML `click` event is used. A click represents activation of the button and normally occurs after press and release with a pointer. It also correctly supports keyboard activation.
-
-## Valve slider
-
-- `input` updates only the temporary selected value shown next to the slider.
-- `change` sends the new opening value to the CUS. For a range input this corresponds to committing the new value, normally when the slider is released.
-- The official valve opening shown in the summary is updated only from the next confirmed CUS state.
-
-## Polling and NOT AVAILABLE
-
-Two independent polling loops are used:
-
-- `/api/state`
-- `/api/measurements`
-
-They have separate configurable intervals.
-
-If `/api/state` cannot be obtained, the dashboard displays `NOT AVAILABLE`, keeps the last known values visible and disables operator controls. `Last update` shows the time of the last successful state response.
-
-If only `/api/measurements` fails while `/api/state` still works, the CUS is considered reachable and the previous graph is kept with a `Measurements not updated` warning.
-
-## CORS
-
-When DBS is served by XAMPP at `http://localhost/dbs/` and CUS is running at `http://localhost:8080`, the browser sees two different origins because the ports are different.
-
-The CUS must therefore allow CORS requests from the DBS origin, normally:
-
-`http://localhost`
-
-This configuration belongs to the CUS backend.
+If the CUS cannot be reached, the dashboard displays `NOT AVAILABLE`, disables the operator controls and keeps the last known values visible together with the `Last update` time.
 
 ## Chart.js
 
-The current `index.html` loads Chart.js from jsDelivr CDN. This keeps the submitted DBS small and immediately usable when an Internet connection is available.
+Chart.js is stored locally in:
 
-For a completely offline demo, download the Chart.js UMD build and place it in `lib/chart.umd.min.js`, then replace the CDN script in `index.html` with:
+```text
+lib/chart.umd.min.js
+```
+
+and loaded from `index.html` with:
 
 ```html
 <script src="lib/chart.umd.min.js"></script>
 ```
+
+This allows the dashboard to work without an Internet connection.
