@@ -1,7 +1,46 @@
 #ifndef CONFIG_H
 #define CONFIG_H
 
+
 #define SERIAL_BAUD_RATE 115200
+
+
+/* SONAR */
+
+// TODO: verificare i pin quando avremo il modello esatto di ESP32
+#define SONAR_TRIG_PIN 5
+#define SONAR_ECHO_PIN 18
+
+/*
+ * TODO: la temperatura potrebbe essere letta automaticamente
+ * mediante un sensore dedicato.
+ * Per ora viene utilizzata una temperatura fissa per calcolare
+ * la velocità del suono.
+ */
 #define DEFAULT_AIR_TEMPERATURE_C 20.0f
+
+/*
+ * TODO: si può scegliere di cambiare
+ * Tempo massimo di attesa dell'eco, in microsecondi
+*/
+#define SONAR_TIMEOUT_US 30000UL
+
+
+/*
+ * Distanza tra il sonar e il fondo della tanica.
+ * Poiché il sonar rappresenta il piano del 100%,
+ * questa è anche l'altezza utile della tanica.
+ *
+ * TODO: sostituire con la misura reale quando avremo l'hardware.
+ */
+#define TANK_HEIGHT_M 1.00f
+
+
+/*
+ *TODO: si può scegliere di cambiare il periodo per le misurazioni.
+ *(ogni quanto far partire l'eco) 
+*/
+#define MEASUREMENT_PERIOD_MS 2000UL
+
 
 #endif

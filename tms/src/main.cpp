@@ -1,40 +1,43 @@
 #include <Arduino.h>
+
 #include "config.h"
+#include "devices/Sonar.h"
+#include "tasks/WaterLevelTask.h"
 
-TaskHandle_t testTaskHandle = nullptr;
 
-void testTask(void* parameter) {
-    (void) parameter;
+Sonar sonar(
+    SONAR_TRIG_PIN,
+    SONAR_ECHO_PIN,
+    SONAR_TIMEOUT_US
+);
 
-    for (;;) {
-        Serial.print("Test task is running on core ");
-        Serial.println(xPortGetCoreID());
+WaterLevelTaskParams waterLevelTaskParams;
 
-        delay(2000);
-    }
-}
+TaskHandle_t waterLevelTaskHandle;
+
 
 void setup() {
+
     Serial.begin(SERIAL_BAUD_RATE);
     delay(1000);
 
-    Serial.print("setup() is running on core ");
-    Serial.println(xPortGetCoreID());
+    waterLevelTaskParams.sensor = &sonar;
+    waterLevelTaskParams.tankHeightM = TANK_HEIGHT_M;
+    waterLevelTaskParams.measurementPeriodMs = MEASUREMENT_PERIOD_MS;
 
     xTaskCreatePinnedToCore(
-        testTask,
-        "TestTask",
+        waterLevelTask,
+        "WaterLevelTask",
         10000,
-        nullptr,
+        &waterLevelTaskParams,
         1,
-        &testTaskHandle,
+        &waterLevelTaskHandle,
         0
     );
 }
 
-void loop() {
-    Serial.print("loop() is running on core ");
-    Serial.println(xPortGetCoreID());
 
-    delay(5000);
+void loop() {
+
+    delay(10000);
 }
