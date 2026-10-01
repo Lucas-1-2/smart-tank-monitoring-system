@@ -1,3 +1,5 @@
+// ORCHESTRATORE
+
 import { CONFIG } from "./config.js";
 import {
     ApiError,
@@ -14,6 +16,7 @@ const SystemMode = Object.freeze({
     UNCONNECTED: "UNCONNECTED"
 });
 
+// Copia locale della dashboard dell'ultima informazione conosciuta
 const dashboardState = {
     connectionAvailable: false,
     mode: null,

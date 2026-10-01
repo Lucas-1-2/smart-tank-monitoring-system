@@ -17,6 +17,7 @@ function formatTimestamp(timestamp) {
     return String(timestamp);
 }
 
+// Crea il grafico iniziale
 export function initWaterLevelChart(canvas) {
     if (!window.Chart) {
         throw new Error("Chart.js is not available");
@@ -63,6 +64,7 @@ export function initWaterLevelChart(canvas) {
     });
 }
 
+// Aggiorna i valori
 export function updateWaterLevelChart(measurements) {
     if (!chart) {
         return;
