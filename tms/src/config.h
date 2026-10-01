@@ -36,11 +36,27 @@
 #define TANK_HEIGHT_M 1.00f
 
 
+/* TASK PERIODS */
+
+/* Frequenza di esecuzione del task di misurazione */
+#define WATER_LEVEL_TASK_PERIOD_MS 2000UL
+
+/* Frequenza di controllo del task di comunicazione */
+#define COMMUNICATION_TASK_PERIOD_MS 100UL
+
+/* Intervallo tra due controlli durante la connessione */
+#define WIFI_RETRY_DELAY_MS 500UL
+
+
+
+/* WI-FI */
+
 /*
- *TODO: si può scegliere di cambiare il periodo per le misurazioni.
- *(ogni quanto far partire l'eco) 
-*/
-#define MEASUREMENT_PERIOD_MS 2000UL
+ * TODO: inserire le credenziali della rete utilizzata
+ * durante le prove con l'ESP32.
+ */
+#define WIFI_SSID "INSERISCI_NOME_RETE"
+#define WIFI_PASSWORD "INSERISCI_PASSWORD"
 
 
 #endif

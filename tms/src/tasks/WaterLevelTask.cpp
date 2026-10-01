@@ -4,16 +4,13 @@
 
 void waterLevelTask(void* parameter) {
 
-    WaterLevelTaskParams* params =
-        static_cast<WaterLevelTaskParams*>(parameter);
+    WaterLevelTaskParams* params = static_cast<WaterLevelTaskParams*>(parameter);
 
     for (;;) {
 
-        float distance =
-            params->sensor->getDistance();
+        float distance = params->sensor->getDistance();
 
-        bool measurementValid =
-            distance >= 0.0f;
+        bool measurementValid = distance >= 0.0f;
 
         if (!measurementValid) {
 
@@ -24,8 +21,7 @@ void waterLevelTask(void* parameter) {
 
         } else {
 
-            float waterLevel =
-                params->tankHeightM - distance;
+            float waterLevel = params->tankHeightM - distance;
 
             if (waterLevel < 0.0f) {
                 waterLevel = 0.0f;
@@ -35,8 +31,7 @@ void waterLevelTask(void* parameter) {
                 waterLevel = params->tankHeightM;
             }
 
-            float waterPercentage =
-                (waterLevel / params->tankHeightM) * 100.0f;
+            float waterPercentage = (waterLevel / params->tankHeightM) * 100.0f;
 
             Serial.print("Distanza dalla superficie: ");
             Serial.print(distance);

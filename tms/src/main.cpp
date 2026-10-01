@@ -3,6 +3,7 @@
 #include "config.h"
 #include "devices/Sonar.h"
 #include "tasks/WaterLevelTask.h"
+#include "tasks/CommunicationTask.h"
 
 
 Sonar sonar(
@@ -11,9 +12,13 @@ Sonar sonar(
     SONAR_TIMEOUT_US
 );
 
-WaterLevelTaskParams waterLevelTaskParams;
 
+WaterLevelTaskParams waterLevelTaskParams;
 TaskHandle_t waterLevelTaskHandle;
+
+
+CommunicationTaskParams communicationTaskParams;
+TaskHandle_t communicationTaskHandle;
 
 
 void setup() {
@@ -21,9 +26,12 @@ void setup() {
     Serial.begin(SERIAL_BAUD_RATE);
     delay(1000);
 
+
+    /* Configurazione task di misurazione */
+
     waterLevelTaskParams.sensor = &sonar;
     waterLevelTaskParams.tankHeightM = TANK_HEIGHT_M;
-    waterLevelTaskParams.measurementPeriodMs = MEASUREMENT_PERIOD_MS;
+    waterLevelTaskParams.measurementPeriodMs = WATER_LEVEL_TASK_PERIOD_MS;
 
     xTaskCreatePinnedToCore(
         waterLevelTask,
@@ -33,6 +41,27 @@ void setup() {
         1,
         &waterLevelTaskHandle,
         0
+    );
+
+    delay(500);
+
+
+    /* Configurazione task di comunicazione */
+    communicationTaskParams.ssid = WIFI_SSID;
+    communicationTaskParams.password = WIFI_PASSWORD;
+
+    communicationTaskParams.taskPeriodMs = COMMUNICATION_TASK_PERIOD_MS;
+
+    communicationTaskParams.wifiRetryDelayMs = WIFI_RETRY_DELAY_MS;
+    
+    xTaskCreatePinnedToCore(
+        communicationTask,
+        "CommunicationTask",
+        10000,
+        &communicationTaskParams,
+        1,
+        &communicationTaskHandle,
+        1
     );
 }
 
