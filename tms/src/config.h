@@ -80,4 +80,15 @@
 #define MQTT_RETRY_DELAY_MS 5000UL
 
 
+
+/* LED DI STATO DELLA COMUNICAZIONE */
+
+/*
+ * TODO: verificare i pin quando avremo la scheda
+ * e realizzeremo i collegamenti fisici.
+ */
+#define GREEN_LED_PIN 25
+#define RED_LED_PIN 26
+
+
 #endif

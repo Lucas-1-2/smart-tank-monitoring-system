@@ -1,6 +1,9 @@
 #ifndef COMMUNICATION_TASK_H
 #define COMMUNICATION_TASK_H
 
+#include <freertos/FreeRTOS.h>
+#include <freertos/queue.h>
+
 
 struct CommunicationTaskParams {
 
@@ -18,6 +21,8 @@ struct CommunicationTaskParams {
 
     /* Periodo del task */
     unsigned long taskPeriodMs;
+
+    QueueHandle_t measurementQueue;
 };
 
 

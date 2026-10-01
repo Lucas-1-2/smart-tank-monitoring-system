@@ -3,6 +3,7 @@
 #include <PubSubClient.h>
 
 #include "CommunicationTask.h"
+#include "data/WaterLevelData.h"
 
 WiFiClient wifiClient;
 PubSubClient mqttClient(wifiClient);
@@ -28,6 +29,7 @@ void connectToWiFi(CommunicationTaskParams* params) {
     Serial.print("Indirizzo IP: ");
     Serial.println(WiFi.localIP());
 }
+
 
 
 void connectToMqtt(CommunicationTaskParams* params) {
@@ -60,6 +62,54 @@ void connectToMqtt(CommunicationTaskParams* params) {
 }
 
 
+
+void publishMeasurement(
+    CommunicationTaskParams* params,
+    WaterLevelData measurement
+) {
+
+    char payload[128];
+
+    if (measurement.measurementValid) {
+
+        snprintf(
+            payload,
+            sizeof(payload),
+            "{\"status\":\"OK\",\"levelM\":%.3f,\"percentage\":%.1f}",
+            measurement.waterLevelM,
+            measurement.waterPercentage
+        );
+
+    } else {
+
+        snprintf(
+            payload,
+            sizeof(payload),
+            "{\"status\":\"NO_ECHO\"}"
+        );
+    }
+
+
+    Serial.print("Pubblicazione MQTT: ");
+    Serial.println(payload);
+
+    bool published = mqttClient.publish(
+        params->mqttDataTopic,
+        payload
+    );
+
+    if (published) {
+
+        Serial.println("Messaggio MQTT inviato");
+
+    } else {
+
+        Serial.println("Errore durante la pubblicazione MQTT");
+    }
+}
+
+
+
 void communicationTask(void* parameter) {
 
     CommunicationTaskParams* params = static_cast<CommunicationTaskParams*>(parameter);
@@ -87,10 +137,36 @@ void communicationTask(void* parameter) {
         if (!mqttClient.connected()) {
 
             Serial.println("Connessione MQTT assente");
+
             connectToMqtt(params);
         }
 
-        mqttClient.loop();
+
+        if (mqttClient.connected()) {
+
+            mqttClient.loop();
+        }
+
+
+        if (mqttClient.connected()) {
+
+            WaterLevelData receivedMeasurement;
+
+            if (
+                xQueueReceive(
+                    params->measurementQueue,
+                    &receivedMeasurement,
+                    0
+                ) == pdTRUE
+            ) {
+
+                publishMeasurement(
+                    params,
+                    receivedMeasurement
+                );
+            }
+        }
+
 
         delay(params->taskPeriodMs);
     }

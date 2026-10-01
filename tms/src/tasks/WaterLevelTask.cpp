@@ -1,27 +1,42 @@
 #include <Arduino.h>
+
 #include "WaterLevelTask.h"
+#include "data/WaterLevelData.h"
 
 
 void waterLevelTask(void* parameter) {
 
-    WaterLevelTaskParams* params = static_cast<WaterLevelTaskParams*>(parameter);
+    WaterLevelTaskParams* params =
+        static_cast<WaterLevelTaskParams*>(parameter);
 
     for (;;) {
 
-        float distance = params->sensor->getDistance();
+        float distance =
+            params->sensor->getDistance();
 
-        bool measurementValid = distance >= 0.0f;
+        WaterLevelData measurement;
 
-        if (!measurementValid) {
+        measurement.measurementValid =
+            distance >= 0.0f;
+
+        measurement.distanceM =
+            distance;
+
+        measurement.waterLevelM =
+            0.0f;
+
+        measurement.waterPercentage =
+            0.0f;
+
+
+        if (!measurement.measurementValid) {
 
             Serial.println("Nessun eco rilevato");
 
-            // TODO MQTT: comunicare NO_ECHO al CUS
-            // senza inviare un livello numerico
-
         } else {
 
-            float waterLevel = params->tankHeightM - distance;
+            float waterLevel =
+                params->tankHeightM - distance;
 
             if (waterLevel < 0.0f) {
                 waterLevel = 0.0f;
@@ -31,7 +46,15 @@ void waterLevelTask(void* parameter) {
                 waterLevel = params->tankHeightM;
             }
 
-            float waterPercentage = (waterLevel / params->tankHeightM) * 100.0f;
+            float waterPercentage =
+                (waterLevel / params->tankHeightM) * 100.0f;
+
+            measurement.waterLevelM =
+                waterLevel;
+
+            measurement.waterPercentage =
+                waterPercentage;
+
 
             Serial.print("Distanza dalla superficie: ");
             Serial.print(distance);
@@ -43,6 +66,12 @@ void waterLevelTask(void* parameter) {
             Serial.print(waterPercentage);
             Serial.println("%");
         }
+
+
+        xQueueOverwrite(
+            params->measurementQueue,
+            &measurement
+        );
 
         delay(params->measurementPeriodMs);
     }

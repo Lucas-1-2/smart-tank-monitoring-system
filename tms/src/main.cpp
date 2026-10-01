@@ -1,9 +1,12 @@
 #include <Arduino.h>
+#include <freertos/FreeRTOS.h>
+#include <freertos/queue.h>
 
 #include "config.h"
 #include "devices/Sonar.h"
 #include "tasks/WaterLevelTask.h"
 #include "tasks/CommunicationTask.h"
+#include "data/WaterLevelData.h"
 
 
 Sonar sonar(
@@ -20,11 +23,27 @@ TaskHandle_t waterLevelTaskHandle;
 CommunicationTaskParams communicationTaskParams;
 TaskHandle_t communicationTaskHandle;
 
+QueueHandle_t waterLevelQueue = nullptr;
+
 
 void setup() {
 
     Serial.begin(SERIAL_BAUD_RATE);
     delay(1000);
+
+    waterLevelQueue = xQueueCreate(
+        1,
+        sizeof(WaterLevelData)
+    );
+
+    if (waterLevelQueue == nullptr) {
+
+        Serial.println("Errore durante la creazione della queue");
+
+        while (true) {
+            delay(1000);
+        }
+    }
 
 
     /* Configurazione task di misurazione */
@@ -32,6 +51,7 @@ void setup() {
     waterLevelTaskParams.sensor = &sonar;
     waterLevelTaskParams.tankHeightM = TANK_HEIGHT_M;
     waterLevelTaskParams.measurementPeriodMs = WATER_LEVEL_TASK_PERIOD_MS;
+    waterLevelTaskParams.measurementQueue = waterLevelQueue;
 
     xTaskCreatePinnedToCore(
         waterLevelTask,
@@ -64,6 +84,8 @@ void setup() {
     communicationTaskParams.mqttRetryDelayMs = MQTT_RETRY_DELAY_MS;
 
     communicationTaskParams.taskPeriodMs = COMMUNICATION_TASK_PERIOD_MS;
+
+    communicationTaskParams.measurementQueue = waterLevelQueue;
     
     xTaskCreatePinnedToCore(
         communicationTask,
