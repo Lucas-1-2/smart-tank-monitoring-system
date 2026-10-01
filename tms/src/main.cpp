@@ -48,11 +48,22 @@ void setup() {
 
     /* Configurazione task di comunicazione */
     communicationTaskParams.ssid = WIFI_SSID;
+
     communicationTaskParams.password = WIFI_PASSWORD;
 
-    communicationTaskParams.taskPeriodMs = COMMUNICATION_TASK_PERIOD_MS;
-
     communicationTaskParams.wifiRetryDelayMs = WIFI_RETRY_DELAY_MS;
+
+    communicationTaskParams.mqttBroker = MQTT_BROKER;
+
+    communicationTaskParams.mqttPort = MQTT_PORT;
+
+    communicationTaskParams.mqttClientIdPrefix = MQTT_CLIENT_ID_PREFIX;
+
+    communicationTaskParams.mqttDataTopic = MQTT_DATA_TOPIC;
+
+    communicationTaskParams.mqttRetryDelayMs = MQTT_RETRY_DELAY_MS;
+
+    communicationTaskParams.taskPeriodMs = COMMUNICATION_TASK_PERIOD_MS;
     
     xTaskCreatePinnedToCore(
         communicationTask,

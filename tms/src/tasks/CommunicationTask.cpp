@@ -1,7 +1,11 @@
 #include <Arduino.h>
 #include <WiFi.h>
+#include <PubSubClient.h>
 
 #include "CommunicationTask.h"
+
+WiFiClient wifiClient;
+PubSubClient mqttClient(wifiClient);
 
 
 void connectToWiFi(CommunicationTaskParams* params) {
@@ -26,12 +30,49 @@ void connectToWiFi(CommunicationTaskParams* params) {
 }
 
 
+void connectToMqtt(CommunicationTaskParams* params) {
+
+    while (!mqttClient.connected() &&
+           WiFi.status() == WL_CONNECTED) {
+
+        Serial.print("Connessione al broker MQTT... ");
+
+        String clientId =
+            String(params->mqttClientIdPrefix) +
+            String(random(0xffff), HEX);
+
+        if (mqttClient.connect(clientId.c_str())) {
+
+            Serial.println("connesso");
+
+        } else {
+
+            Serial.print("fallita, stato: ");
+            Serial.println(mqttClient.state());
+
+            Serial.print("Nuovo tentativo tra ");
+            Serial.print(params->mqttRetryDelayMs);
+            Serial.println(" ms");
+
+            delay(params->mqttRetryDelayMs);
+        }
+    }
+}
+
+
 void communicationTask(void* parameter) {
 
-    CommunicationTaskParams* params =
-        static_cast<CommunicationTaskParams*>(parameter);
+    CommunicationTaskParams* params = static_cast<CommunicationTaskParams*>(parameter);
+
+    randomSeed(micros());
+
+    mqttClient.setServer(
+        params->mqttBroker,
+        params->mqttPort
+    );
 
     connectToWiFi(params);
+    connectToMqtt(params);
 
     for (;;) {
 
@@ -42,6 +83,14 @@ void communicationTask(void* parameter) {
 
             connectToWiFi(params);
         }
+
+        if (!mqttClient.connected()) {
+
+            Serial.println("Connessione MQTT assente");
+            connectToMqtt(params);
+        }
+
+        mqttClient.loop();
 
         delay(params->taskPeriodMs);
     }

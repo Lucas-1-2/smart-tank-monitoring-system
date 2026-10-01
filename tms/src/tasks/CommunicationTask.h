@@ -3,10 +3,21 @@
 
 
 struct CommunicationTaskParams {
+
+    /* Wi-Fi */
     const char* ssid;
     const char* password;
-    unsigned long taskPeriodMs;
     unsigned long wifiRetryDelayMs;
+
+    /* MQTT */
+    const char* mqttBroker;
+    int mqttPort;
+    const char* mqttClientIdPrefix;
+    const char* mqttDataTopic;
+    unsigned long mqttRetryDelayMs;
+
+    /* Periodo del task */
+    unsigned long taskPeriodMs;
 };
 
 

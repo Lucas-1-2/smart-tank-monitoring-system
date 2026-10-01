@@ -5,6 +5,7 @@
 #define SERIAL_BAUD_RATE 115200
 
 
+
 /* SONAR */
 
 // TODO: verificare i pin quando avremo il modello esatto di ESP32
@@ -36,6 +37,7 @@
 #define TANK_HEIGHT_M 1.00f
 
 
+
 /* TASK PERIODS */
 
 /* Frequenza di esecuzione del task di misurazione */
@@ -57,6 +59,25 @@
  */
 #define WIFI_SSID "INSERISCI_NOME_RETE"
 #define WIFI_PASSWORD "INSERISCI_PASSWORD"
+
+
+
+/* MQTT */
+
+/* Broker (questa è lab prof)*/
+#define MQTT_BROKER "broker.mqtt-dashboard.com"
+
+/* Porta MQTT standard(per ora) */
+#define MQTT_PORT 1883
+
+/* Prefisso dell'identificatore dell'ESP32 */
+#define MQTT_CLIENT_ID_PREFIX "smart-tank-tms-"
+
+/* Topic sul quale il TMS pubblicherà misure e stati */
+#define MQTT_DATA_TOPIC "unibo/esiot/2025-2026/group06/tms/data"
+
+/* Attesa prima di un nuovo tentativo di connessione MQTT */
+#define MQTT_RETRY_DELAY_MS 5000UL
 
 
 #endif
