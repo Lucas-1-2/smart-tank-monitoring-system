@@ -7,6 +7,7 @@
 #include "tasks/WaterLevelTask.h"
 #include "tasks/CommunicationTask.h"
 #include "data/WaterLevelData.h"
+#include "devices/Led.h"
 
 
 Sonar sonar(
@@ -25,11 +26,17 @@ TaskHandle_t communicationTaskHandle;
 
 QueueHandle_t waterLevelQueue = nullptr;
 
+Light* greenLed = nullptr;
+Light* redLed = nullptr;
+
 
 void setup() {
 
     Serial.begin(SERIAL_BAUD_RATE);
     delay(1000);
+
+    greenLed = new Led(GREEN_LED_PIN);
+    redLed = new Led(RED_LED_PIN);
 
     waterLevelQueue = xQueueCreate(
         1,
@@ -86,6 +93,10 @@ void setup() {
     communicationTaskParams.taskPeriodMs = COMMUNICATION_TASK_PERIOD_MS;
 
     communicationTaskParams.measurementQueue = waterLevelQueue;
+
+    communicationTaskParams.greenLed = greenLed;
+
+    communicationTaskParams.redLed = redLed;
     
     xTaskCreatePinnedToCore(
         communicationTask,

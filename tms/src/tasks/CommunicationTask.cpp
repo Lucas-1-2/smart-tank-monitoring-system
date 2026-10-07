@@ -8,6 +8,38 @@
 WiFiClient wifiClient;
 PubSubClient mqttClient(wifiClient);
 
+enum CommunicationState {
+
+    COMMUNICATION_ERROR,
+    COMMUNICATION_OK
+};
+
+
+
+void setCommunicationState(
+    CommunicationTaskParams* params,
+    CommunicationState state
+) {
+
+    switch (state) {
+
+        case COMMUNICATION_OK:
+
+            params->redLed->switchOff();
+            params->greenLed->switchOn();
+
+            break;
+
+
+        case COMMUNICATION_ERROR:
+
+            params->greenLed->switchOff();
+            params->redLed->switchOn();
+
+            break;
+    }
+}
+
 
 void connectToWiFi(CommunicationTaskParams* params) {
 

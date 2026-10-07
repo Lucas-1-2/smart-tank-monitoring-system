@@ -4,6 +4,8 @@
 #include <freertos/FreeRTOS.h>
 #include <freertos/queue.h>
 
+#include "devices/Light.h"
+
 
 struct CommunicationTaskParams {
 
@@ -19,9 +21,14 @@ struct CommunicationTaskParams {
     const char* mqttDataTopic;
     unsigned long mqttRetryDelayMs;
 
+    /* LED */
+    Light* greenLed;
+    Light* redLed;
+
     /* Periodo del task */
     unsigned long taskPeriodMs;
 
+    /* Queue */
     QueueHandle_t measurementQueue;
 };
 
