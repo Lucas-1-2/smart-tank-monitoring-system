@@ -38,6 +38,9 @@ void setup() {
     greenLed = new Led(GREEN_LED_PIN);
     redLed = new Led(RED_LED_PIN);
 
+    greenLed->switchOff();
+    redLed->switchOn();
+
     waterLevelQueue = xQueueCreate(
         1,
         sizeof(WaterLevelData)
@@ -60,7 +63,8 @@ void setup() {
     waterLevelTaskParams.measurementPeriodMs = WATER_LEVEL_TASK_PERIOD_MS;
     waterLevelTaskParams.measurementQueue = waterLevelQueue;
 
-    xTaskCreatePinnedToCore(
+    
+    BaseType_t waterLevelTaskResult = xTaskCreatePinnedToCore(
         waterLevelTask,
         "WaterLevelTask",
         10000,
@@ -69,6 +73,15 @@ void setup() {
         &waterLevelTaskHandle,
         0
     );
+
+    if (waterLevelTaskResult != pdPASS) {
+
+        Serial.println("Errore: WaterLevelTask non creato");
+
+        while (true) {
+            delay(1000);
+        }
+    }
 
     delay(500);
 
@@ -97,8 +110,9 @@ void setup() {
     communicationTaskParams.greenLed = greenLed;
 
     communicationTaskParams.redLed = redLed;
-    
-    xTaskCreatePinnedToCore(
+
+
+    BaseType_t communicationTaskResult = xTaskCreatePinnedToCore(
         communicationTask,
         "CommunicationTask",
         10000,
@@ -107,6 +121,15 @@ void setup() {
         &communicationTaskHandle,
         1
     );
+
+    if (communicationTaskResult != pdPASS) {
+
+        Serial.println("Errore: CommunicationTask non creato");
+
+        while (true) {
+            delay(1000);
+        }
+    }
 }
 
 

@@ -15,13 +15,17 @@ enum CommunicationState {
 };
 
 
+CommunicationState currentCommunicationState = COMMUNICATION_ERROR;
+
 
 void setCommunicationState(
     CommunicationTaskParams* params,
-    CommunicationState state
+    CommunicationState newState
 ) {
 
-    switch (state) {
+    currentCommunicationState = newState;
+
+    switch (currentCommunicationState) {
 
         case COMMUNICATION_OK:
 
@@ -42,6 +46,11 @@ void setCommunicationState(
 
 
 void connectToWiFi(CommunicationTaskParams* params) {
+
+    setCommunicationState(
+    params,
+    COMMUNICATION_ERROR
+    );
 
     Serial.print("Connessione alla rete Wi-Fi: ");
     Serial.println(params->ssid);
@@ -66,6 +75,11 @@ void connectToWiFi(CommunicationTaskParams* params) {
 
 void connectToMqtt(CommunicationTaskParams* params) {
 
+    setCommunicationState(
+    params,
+    COMMUNICATION_ERROR
+    );
+
     while (!mqttClient.connected() &&
            WiFi.status() == WL_CONNECTED) {
 
@@ -78,6 +92,11 @@ void connectToMqtt(CommunicationTaskParams* params) {
         if (mqttClient.connect(clientId.c_str())) {
 
             Serial.println("connesso");
+
+            setCommunicationState(
+            params,
+            COMMUNICATION_OK
+            );
 
         } else {
 
@@ -134,9 +153,19 @@ void publishMeasurement(
 
         Serial.println("Messaggio MQTT inviato");
 
+        setCommunicationState(
+        params,
+        COMMUNICATION_OK
+        );
+
     } else {
 
         Serial.println("Errore durante la pubblicazione MQTT");
+
+        setCommunicationState(
+        params,
+        COMMUNICATION_ERROR
+        );
     }
 }
 
@@ -176,7 +205,13 @@ void communicationTask(void* parameter) {
 
         if (mqttClient.connected()) {
 
-            mqttClient.loop();
+            if (!mqttClient.loop()) {
+
+                setCommunicationState(
+                    params,
+                    COMMUNICATION_ERROR
+                );
+            }
         }
 
 

@@ -19,11 +19,11 @@ float Sonar::getDistance() {
     delayMicroseconds(3);
 
     digitalWrite(trigPin, HIGH);
-    delayMicroseconds(5);
+    delayMicroseconds(10);
 
     digitalWrite(trigPin, LOW);
 
-    unsigned long echoTime = pulseIn(echoPin, HIGH, timeout); //periodo task più lungo del sonar
+    unsigned long echoTime = pulseIn(echoPin, HIGH, timeout); //Durata dell'eco in microsecondi; 0 se la lettura va in timeout
 
     if (echoTime == 0) {
         return NO_ECHO_DETECTED;
