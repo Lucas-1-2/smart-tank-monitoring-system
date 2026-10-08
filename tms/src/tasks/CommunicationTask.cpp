@@ -9,120 +9,78 @@ WiFiClient wifiClient;
 PubSubClient mqttClient(wifiClient);
 
 enum CommunicationState {
-
-    COMMUNICATION_ERROR,
+    WIFI_CONNECTING,
+    MQTT_CONNECTING,
+    WAITING_FIRST_PUBLISH,
     COMMUNICATION_OK
 };
 
-
-CommunicationState currentCommunicationState = COMMUNICATION_ERROR;
-
-
-void setCommunicationState(
+static void updateLeds(
     CommunicationTaskParams* params,
-    CommunicationState newState
+    CommunicationState state
 ) {
-
-    currentCommunicationState = newState;
-
-    switch (currentCommunicationState) {
-
-        case COMMUNICATION_OK:
-
-            params->redLed->switchOff();
-            params->greenLed->switchOn();
-
-            break;
-
-
-        case COMMUNICATION_ERROR:
-
-            params->greenLed->switchOff();
-            params->redLed->switchOn();
-
-            break;
+    if (state == COMMUNICATION_OK) {
+        params->redLed->switchOff();
+        params->greenLed->switchOn();
+    } else {
+        params->greenLed->switchOff();
+        params->redLed->switchOn();
     }
 }
 
+static void setCommunicationState(
+    CommunicationTaskParams* params,
+    CommunicationState& currentState,
+    CommunicationState newState
+) {
+    if (currentState == newState) {
+        return;
+    }
 
-void connectToWiFi(CommunicationTaskParams* params) {
+    currentState = newState;
+    updateLeds(params, currentState);
+}
 
-    setCommunicationState(
-    params,
-    COMMUNICATION_ERROR
-    );
-
+static void startWiFiConnection(CommunicationTaskParams* params) {
     Serial.print("Connessione alla rete Wi-Fi: ");
     Serial.println(params->ssid);
 
     WiFi.mode(WIFI_STA);
+    WiFi.setAutoReconnect(true);
     WiFi.begin(params->ssid, params->password);
 
+    // Wait for connection
     while (WiFi.status() != WL_CONNECTED) {
-
         Serial.print(".");
         delay(params->wifiRetryDelayMs);
     }
-
-    Serial.println();
-    Serial.println("Wi-Fi connesso");
-
-    Serial.print("Indirizzo IP: ");
-    Serial.println(WiFi.localIP());
+    Serial.println("\nConnected!");
 }
 
+static bool tryConnectMqtt(CommunicationTaskParams* params) {
+    Serial.print("Connessione al broker MQTT... ");
 
+    String clientId =
+        String(params->mqttClientIdPrefix) +
+        String(random(0xffff), HEX);
 
-void connectToMqtt(CommunicationTaskParams* params) {
-
-    setCommunicationState(
-    params,
-    COMMUNICATION_ERROR
-    );
-
-    while (!mqttClient.connected() &&
-           WiFi.status() == WL_CONNECTED) {
-
-        Serial.print("Connessione al broker MQTT... ");
-
-        String clientId =
-            String(params->mqttClientIdPrefix) +
-            String(random(0xffff), HEX);
-
-        if (mqttClient.connect(clientId.c_str())) {
-
-            Serial.println("connesso");
-
-            setCommunicationState(
-            params,
-            COMMUNICATION_OK
-            );
-
-        } else {
-
-            Serial.print("fallita, stato: ");
-            Serial.println(mqttClient.state());
-
-            Serial.print("Nuovo tentativo tra ");
-            Serial.print(params->mqttRetryDelayMs);
-            Serial.println(" ms");
-
-            delay(params->mqttRetryDelayMs);
-        }
+    if (mqttClient.connect(clientId.c_str())) {
+        Serial.println("connesso");
+        return true;
     }
+
+    Serial.print("fallita, stato: ");
+    Serial.println(mqttClient.state());
+    return false;
 }
 
-
-
-void publishMeasurement(
+static bool publishMeasurement(
     CommunicationTaskParams* params,
-    WaterLevelData measurement
+    const WaterLevelData& measurement
 ) {
-
     char payload[128];
 
     if (measurement.measurementValid) {
-
         snprintf(
             payload,
             sizeof(payload),
@@ -130,9 +88,7 @@ void publishMeasurement(
             measurement.waterLevelM,
             measurement.waterPercentage
         );
-
     } else {
-
         snprintf(
             payload,
             sizeof(payload),
@@ -140,40 +96,26 @@ void publishMeasurement(
         );
     }
 
-
     Serial.print("Pubblicazione MQTT: ");
     Serial.println(payload);
 
-    bool published = mqttClient.publish(
+    const bool published = mqttClient.publish(
         params->mqttDataTopic,
         payload
     );
 
     if (published) {
-
         Serial.println("Messaggio MQTT inviato");
-
-        setCommunicationState(
-        params,
-        COMMUNICATION_OK
-        );
-
     } else {
-
         Serial.println("Errore durante la pubblicazione MQTT");
-
-        setCommunicationState(
-        params,
-        COMMUNICATION_ERROR
-        );
     }
+
+    return published;
 }
 
-
-
 void communicationTask(void* parameter) {
-
-    CommunicationTaskParams* params = static_cast<CommunicationTaskParams*>(parameter);
+    CommunicationTaskParams* params =
+        static_cast<CommunicationTaskParams*>(parameter);
 
     randomSeed(micros());
 
@@ -182,59 +124,170 @@ void communicationTask(void* parameter) {
         params->mqttPort
     );
 
-    connectToWiFi(params);
-    connectToMqtt(params);
+    CommunicationState state = WIFI_CONNECTING;
+    updateLeds(params, state);
+
+    startWiFiConnection(params);
+
+    unsigned long lastWiFiStatusLogMs = 0;
+    unsigned long lastMqttAttemptMs = 0;
+
+    TickType_t lastWakeTime = xTaskGetTickCount();
+    const TickType_t taskPeriod =
+        pdMS_TO_TICKS(params->taskPeriodMs);
 
     for (;;) {
+        const unsigned long now = millis();
 
-        if (WiFi.status() != WL_CONNECTED) {
+        switch (state) {
 
-            Serial.println("Connessione Wi-Fi persa");
-            Serial.println("Tentativo di riconnessione...");
+            case WIFI_CONNECTING: {
+                if (WiFi.status() == WL_CONNECTED) {
+                    Serial.println();
+                    Serial.println("Wi-Fi connesso");
+                    Serial.print("Indirizzo IP: ");
+                    Serial.println(WiFi.localIP());
 
-            connectToWiFi(params);
-        }
+                    lastMqttAttemptMs = 0;
+                    setCommunicationState(
+                        params,
+                        state,
+                        MQTT_CONNECTING
+                    );
 
-        if (!mqttClient.connected()) {
+                } else if (
+                    now - lastWiFiStatusLogMs >=
+                    params->wifiRetryDelayMs
+                ) {
+                    Serial.println("In attesa della connessione Wi-Fi...");
+                    lastWiFiStatusLogMs = now;
+                }
 
-            Serial.println("Connessione MQTT assente");
+                break;
+            }
 
-            connectToMqtt(params);
-        }
+            case MQTT_CONNECTING: {
+                if (WiFi.status() != WL_CONNECTED) {
+                    Serial.println("Connessione Wi-Fi persa");
+                    startWiFiConnection(params);
+                    lastWiFiStatusLogMs = now;
 
+                    setCommunicationState(
+                        params,
+                        state,
+                        WIFI_CONNECTING
+                    );
+                    break;
+                }
 
-        if (mqttClient.connected()) {
+                if (mqttClient.connected()) {
+                    setCommunicationState(
+                        params,
+                        state,
+                        WAITING_FIRST_PUBLISH
+                    );
+                    break;
+                }
 
-            if (!mqttClient.loop()) {
+                if (
+                    lastMqttAttemptMs == 0 ||
+                    now - lastMqttAttemptMs >=
+                        params->mqttRetryDelayMs
+                ) {
+                    lastMqttAttemptMs = now;
 
-                setCommunicationState(
-                    params,
-                    COMMUNICATION_ERROR
-                );
+                    if (tryConnectMqtt(params)) {
+                        setCommunicationState(
+                            params,
+                            state,
+                            WAITING_FIRST_PUBLISH
+                        );
+                    }
+                }
+
+                break;
+            }
+
+            case WAITING_FIRST_PUBLISH:
+            case COMMUNICATION_OK: {
+                if (WiFi.status() != WL_CONNECTED) {
+                    Serial.println("Connessione Wi-Fi persa");
+                    mqttClient.disconnect();
+                    startWiFiConnection(params);
+                    lastWiFiStatusLogMs = now;
+
+                    setCommunicationState(
+                        params,
+                        state,
+                        WIFI_CONNECTING
+                    );
+                    break;
+                }
+
+                if (!mqttClient.connected()) {
+                    Serial.println("Connessione MQTT persa");
+                    lastMqttAttemptMs = 0;
+
+                    setCommunicationState(
+                        params,
+                        state,
+                        MQTT_CONNECTING
+                    );
+                    break;
+                }
+
+                if (!mqttClient.loop()) {
+                    Serial.println("Errore nella gestione della connessione MQTT");
+                    mqttClient.disconnect();
+                    lastMqttAttemptMs = 0;
+
+                    setCommunicationState(
+                        params,
+                        state,
+                        MQTT_CONNECTING
+                    );
+                    break;
+                }
+
+                WaterLevelData receivedMeasurement;
+
+                if (
+                    xQueueReceive(
+                        params->measurementQueue,
+                        &receivedMeasurement,
+                        0
+                    ) == pdTRUE
+                ) {
+                    if (
+                        publishMeasurement(
+                            params,
+                            receivedMeasurement
+                        )
+                    ) {
+                        setCommunicationState(
+                            params,
+                            state,
+                            COMMUNICATION_OK
+                        );
+                    } else {
+                        mqttClient.disconnect();
+                        lastMqttAttemptMs = 0;
+
+                        setCommunicationState(
+                            params,
+                            state,
+                            MQTT_CONNECTING
+                        );
+                    }
+                }
+
+                break;
             }
         }
 
-
-        if (mqttClient.connected()) {
-
-            WaterLevelData receivedMeasurement;
-
-            if (
-                xQueueReceive(
-                    params->measurementQueue,
-                    &receivedMeasurement,
-                    0
-                ) == pdTRUE
-            ) {
-
-                publishMeasurement(
-                    params,
-                    receivedMeasurement
-                );
-            }
-        }
-
-
-        delay(params->taskPeriodMs);
+        vTaskDelayUntil(
+            &lastWakeTime,
+            taskPeriod
+        );
     }
 }

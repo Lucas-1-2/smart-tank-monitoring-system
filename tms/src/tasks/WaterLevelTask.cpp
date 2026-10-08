@@ -3,14 +3,15 @@
 #include "WaterLevelTask.h"
 #include "data/WaterLevelData.h"
 
-
 void waterLevelTask(void* parameter) {
-
     WaterLevelTaskParams* params =
         static_cast<WaterLevelTaskParams*>(parameter);
 
-    for (;;) {
+    TickType_t lastWakeTime = xTaskGetTickCount();
+    const TickType_t taskPeriod =
+        pdMS_TO_TICKS(params->measurementPeriodMs);
 
+    for (;;) {
         float distance =
             params->sensor->getDistance();
 
@@ -28,13 +29,10 @@ void waterLevelTask(void* parameter) {
         measurement.waterPercentage =
             0.0f;
 
-
         if (!measurement.measurementValid) {
-
             Serial.println("Nessun eco rilevato");
 
         } else {
-
             float waterLevel =
                 params->tankHeightM - distance;
 
@@ -55,7 +53,6 @@ void waterLevelTask(void* parameter) {
             measurement.waterPercentage =
                 waterPercentage;
 
-
             Serial.print("Distanza dalla superficie: ");
             Serial.print(distance);
             Serial.println(" m");
@@ -67,12 +64,14 @@ void waterLevelTask(void* parameter) {
             Serial.println("%");
         }
 
-
         xQueueOverwrite(
             params->measurementQueue,
             &measurement
         );
 
-        delay(params->measurementPeriodMs);
+        vTaskDelayUntil(
+            &lastWakeTime,
+            taskPeriod
+        );
     }
 }
