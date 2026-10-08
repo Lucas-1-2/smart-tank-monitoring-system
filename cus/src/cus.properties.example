@@ -1,0 +1,22 @@
+# Automatic policy
+cus.l1=40
+cus.l2=70
+cus.t1.ms=5000
+cus.t2.ms=10000
+
+# HTTP / DBS
+cus.http.host=0.0.0.0
+cus.http.port=8080
+cus.dbs.dir=../dbs
+
+# MQTT
+cus.mqtt.enabled=true
+cus.mqtt.broker=tcp://broker.mqtt-dashboard.com:1883
+cus.mqtt.topic=unibo/esiot/2025-2026/group06/tms/data
+
+# Serial
+cus.serial.enabled=true
+cus.serial.baud=115200
+
+# Optional: bypass graphical serial port selection
+# cus.serial.port=COM5

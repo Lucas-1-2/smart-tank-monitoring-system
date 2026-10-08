@@ -1,77 +1,150 @@
 package it.unibo.cus;
 
-/**
- * Central configuration of the Control Unit Subsystem.
- *
- * Values can be overridden with Java system properties, for example:
- * -Dcus.serial.port=COM5
- * -Dcus.mqtt.topic=unibo/esiot/2025-2026/group06/tms/data
- * -Dcus.dbs.dir=../dbs
- */
+import java.io.IOException;
+import java.io.Reader;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.Properties;
+
+/** Central configuration of the Control Unit Subsystem. */
 public final class Config {
+
+    private static final String CONFIG_FILE_NAME = "cus.properties";
+
+    /* Defaults for values that can be customized through cus.properties. */
+    private static final double DEFAULT_L1 = 40.0;
+    private static final double DEFAULT_L2 = 70.0;
+    private static final long DEFAULT_T1_MS = 5_000L;
+    private static final long DEFAULT_T2_MS = 10_000L;
+
+    private static final String DEFAULT_HTTP_HOST = "0.0.0.0";
+    private static final int DEFAULT_HTTP_PORT = 8080;
+    private static final String DEFAULT_DBS_DIRECTORY = "../dbs";
+
+    private static final boolean DEFAULT_SERIAL_ENABLED = true;
+    private static final int DEFAULT_SERIAL_BAUD_RATE = 115_200;
+
+    private static final boolean DEFAULT_MQTT_ENABLED = true;
+    private static final String DEFAULT_MQTT_BROKER_URI =
+        "tcp://broker.mqtt-dashboard.com:1883";
+    private static final String DEFAULT_MQTT_TOPIC =
+        "unibo/esiot/2025-2026/group06/tms/data";
+
+    /* Configurable values. Defaults are used until load() reads cus.properties. */
+    public static double L1 = DEFAULT_L1;
+    public static double L2 = DEFAULT_L2;
+    public static long T1_MS = DEFAULT_T1_MS;
+    public static long T2_MS = DEFAULT_T2_MS;
+
+    public static String HTTP_HOST = DEFAULT_HTTP_HOST;
+    public static int HTTP_PORT = DEFAULT_HTTP_PORT;
+    public static String DBS_DIRECTORY = DEFAULT_DBS_DIRECTORY;
+
+    public static boolean SERIAL_ENABLED = DEFAULT_SERIAL_ENABLED;
+    public static String SERIAL_PORT = null;
+    public static int SERIAL_BAUD_RATE = DEFAULT_SERIAL_BAUD_RATE;
+
+    public static boolean MQTT_ENABLED = DEFAULT_MQTT_ENABLED;
+    public static String MQTT_BROKER_URI = DEFAULT_MQTT_BROKER_URI;
+    public static String MQTT_TOPIC = DEFAULT_MQTT_TOPIC;
+
+    /* Internal parameters that do not need external configuration. */
+    public static final int HISTORY_SIZE = 20;
+    public static final long CONTROL_TICK_MS = 100L;
+    public static final int MQTT_QOS = 0;
+    public static final long MQTT_RETRY_DELAY_MS = 5_000L;
+
+    private static boolean loaded;
 
     private Config() {
     }
 
-    /* Automatic policy parameters. */
-    public static final double L1 = doubleSetting("cus.l1", "CUS_L1", 40.0);
-    public static final double L2 = doubleSetting("cus.l2", "CUS_L2", 70.0);
-    public static final long T1_MS = longSetting("cus.t1.ms", "CUS_T1_MS", 5_000L);
-    public static final long T2_MS = longSetting("cus.t2.ms", "CUS_T2_MS", 10_000L);
+    /**
+     * Loads cus.properties from the current working directory once.
+     * Missing files or properties simply keep the defaults above.
+     */
+    public static synchronized void load() {
+        if (loaded) {
+            return;
+        }
 
-    /* Number of measurements retained for DBS. */
-    public static final int HISTORY_SIZE = intSetting("cus.history.size", "CUS_HISTORY_SIZE", 20);
+        final Path configPath = Path.of(CONFIG_FILE_NAME);
+        if (!Files.exists(configPath)) {
+            loaded = true;
+            System.out.println(
+                "[CONFIG] " + CONFIG_FILE_NAME + " not found; using default values."
+            );
+            return;
+        }
 
-    /* Main periodic check for T1/T2. */
-    public static final long CONTROL_TICK_MS = longSetting(
-        "cus.control.tick.ms",
-        "CUS_CONTROL_TICK_MS",
-        100L
-    );
+        final Properties properties = new Properties();
+        try (Reader reader = Files.newBufferedReader(configPath, StandardCharsets.UTF_8)) {
+            properties.load(reader);
+        } catch (final IOException exception) {
+            throw new IllegalStateException(
+                "Cannot read " + configPath.toAbsolutePath(),
+                exception
+            );
+        }
 
-    /* HTTP / DBS. */
-    public static final String HTTP_HOST = stringSetting("cus.http.host", "CUS_HTTP_HOST", "0.0.0.0");
-    public static final int HTTP_PORT = intSetting("cus.http.port", "CUS_HTTP_PORT", 8080);
-    public static final String DBS_DIRECTORY = stringSetting("cus.dbs.dir", "CUS_DBS_DIR", "../dbs");
+        try {
+            L1 = doubleProperty(properties, "cus.l1", DEFAULT_L1);
+            L2 = doubleProperty(properties, "cus.l2", DEFAULT_L2);
+            T1_MS = longProperty(properties, "cus.t1.ms", DEFAULT_T1_MS);
+            T2_MS = longProperty(properties, "cus.t2.ms", DEFAULT_T2_MS);
 
-    /* WCS serial line. */
-    public static final boolean SERIAL_ENABLED = booleanSetting(
-        "cus.serial.enabled",
-        "CUS_SERIAL_ENABLED",
-        true
-    );
-    public static final String SERIAL_PORT = stringSetting("cus.serial.port", "CUS_SERIAL_PORT", "COM7");
-    public static final int SERIAL_BAUD_RATE = intSetting(
-        "cus.serial.baud",
-        "CUS_SERIAL_BAUD",
-        115200
-    );
+            HTTP_HOST = stringProperty(properties, "cus.http.host", DEFAULT_HTTP_HOST);
+            HTTP_PORT = intProperty(properties, "cus.http.port", DEFAULT_HTTP_PORT);
+            DBS_DIRECTORY = stringProperty(
+                properties,
+                "cus.dbs.dir",
+                DEFAULT_DBS_DIRECTORY
+            );
 
-    /* TMS MQTT configuration. */
-    public static final boolean MQTT_ENABLED = booleanSetting(
-        "cus.mqtt.enabled",
-        "CUS_MQTT_ENABLED",
-        true
-    );
-    public static final String MQTT_BROKER_URI = stringSetting(
-        "cus.mqtt.broker",
-        "CUS_MQTT_BROKER",
-        "tcp://broker.mqtt-dashboard.com:1883"
-    );
-    public static final String MQTT_TOPIC = stringSetting(
-        "cus.mqtt.topic",
-        "CUS_MQTT_TOPIC",
-        "unibo/esiot/2025-2026/group06/tms/data"
-    );
-    public static final int MQTT_QOS = intSetting("cus.mqtt.qos", "CUS_MQTT_QOS", 0);
-    public static final long MQTT_RETRY_DELAY_MS = longSetting(
-        "cus.mqtt.retry.ms",
-        "CUS_MQTT_RETRY_MS",
-        5_000L
-    );
+            SERIAL_ENABLED = booleanProperty(
+                properties,
+                "cus.serial.enabled",
+                DEFAULT_SERIAL_ENABLED
+            );
+            SERIAL_PORT = optionalStringProperty(properties, "cus.serial.port");
+            SERIAL_BAUD_RATE = intProperty(
+                properties,
+                "cus.serial.baud",
+                DEFAULT_SERIAL_BAUD_RATE
+            );
 
-    /** Validates configuration before the application starts. */
+            MQTT_ENABLED = booleanProperty(
+                properties,
+                "cus.mqtt.enabled",
+                DEFAULT_MQTT_ENABLED
+            );
+            MQTT_BROKER_URI = stringProperty(
+                properties,
+                "cus.mqtt.broker",
+                DEFAULT_MQTT_BROKER_URI
+            );
+            MQTT_TOPIC = stringProperty(
+                properties,
+                "cus.mqtt.topic",
+                DEFAULT_MQTT_TOPIC
+            );
+        } catch (final IllegalArgumentException exception) {
+            throw new IllegalStateException(
+                "Invalid value in " + configPath.toAbsolutePath() + ": "
+                    + exception.getMessage(),
+                exception
+            );
+        }
+
+        loaded = true;
+        System.out.println("[CONFIG] Loaded " + configPath.toAbsolutePath());
+    }
+
+    /** Loads and validates configuration before the application starts. */
     public static void validate() {
+        load();
+
         require(L1 >= 0.0 && L1 <= 100.0, "L1 must be in [0,100]");
         require(L2 >= 0.0 && L2 <= 100.0, "L2 must be in [0,100]");
         require(L1 < L2, "L1 must be lower than L2");
@@ -79,12 +152,11 @@ public final class Config {
         require(T2_MS > 0, "T2 must be > 0");
         require(HISTORY_SIZE > 0, "History size must be > 0");
         require(CONTROL_TICK_MS > 0, "Control tick must be > 0");
-        require(HTTP_PORT > 0 && HTTP_PORT <= 65535, "HTTP port must be valid");
+        require(HTTP_PORT > 0 && HTTP_PORT <= 65_535, "HTTP port must be valid");
         require(!HTTP_HOST.isBlank(), "HTTP host cannot be blank");
         require(!DBS_DIRECTORY.isBlank(), "DBS directory cannot be blank");
 
         if (SERIAL_ENABLED) {
-            require(!SERIAL_PORT.isBlank(), "Serial port cannot be blank");
             require(SERIAL_BAUD_RATE > 0, "Serial baud rate must be > 0");
         }
 
@@ -102,55 +174,106 @@ public final class Config {
         }
     }
 
-    private static String stringSetting(
-        final String property,
-        final String environment,
+    private static String stringProperty(
+        final Properties properties,
+        final String key,
         final String defaultValue
     ) {
-        final String propertyValue = System.getProperty(property);
-        if (propertyValue != null && !propertyValue.isBlank()) {
-            return propertyValue.trim();
-        }
-
-        final String environmentValue = System.getenv(environment);
-        if (environmentValue != null && !environmentValue.isBlank()) {
-            return environmentValue.trim();
-        }
-
-        return defaultValue;
+        final String value = properties.getProperty(key);
+        return value == null ? defaultValue : value.trim();
     }
 
-    private static int intSetting(
-        final String property,
-        final String environment,
+    private static String optionalStringProperty(
+        final Properties properties,
+        final String key
+    ) {
+        final String value = properties.getProperty(key);
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        return value.trim();
+    }
+
+    private static int intProperty(
+        final Properties properties,
+        final String key,
         final int defaultValue
     ) {
-        return Integer.parseInt(stringSetting(property, environment, Integer.toString(defaultValue)));
+        final String value = properties.getProperty(key);
+        if (value == null) {
+            return defaultValue;
+        }
+
+        try {
+            return Integer.parseInt(value.trim());
+        } catch (final NumberFormatException exception) {
+            throw new IllegalArgumentException(
+                key + " must be an integer, found: " + value,
+                exception
+            );
+        }
     }
 
-    private static long longSetting(
-        final String property,
-        final String environment,
+    private static long longProperty(
+        final Properties properties,
+        final String key,
         final long defaultValue
     ) {
-        return Long.parseLong(stringSetting(property, environment, Long.toString(defaultValue)));
+        final String value = properties.getProperty(key);
+        if (value == null) {
+            return defaultValue;
+        }
+
+        try {
+            return Long.parseLong(value.trim());
+        } catch (final NumberFormatException exception) {
+            throw new IllegalArgumentException(
+                key + " must be an integer, found: " + value,
+                exception
+            );
+        }
     }
 
-    private static double doubleSetting(
-        final String property,
-        final String environment,
+    private static double doubleProperty(
+        final Properties properties,
+        final String key,
         final double defaultValue
     ) {
-        return Double.parseDouble(stringSetting(property, environment, Double.toString(defaultValue)));
+        final String value = properties.getProperty(key);
+        if (value == null) {
+            return defaultValue;
+        }
+
+        try {
+            return Double.parseDouble(value.trim());
+        } catch (final NumberFormatException exception) {
+            throw new IllegalArgumentException(
+                key + " must be a number, found: " + value,
+                exception
+            );
+        }
     }
 
-    private static boolean booleanSetting(
-        final String property,
-        final String environment,
+    private static boolean booleanProperty(
+        final Properties properties,
+        final String key,
         final boolean defaultValue
     ) {
-        return Boolean.parseBoolean(
-            stringSetting(property, environment, Boolean.toString(defaultValue))
+        final String value = properties.getProperty(key);
+        if (value == null) {
+            return defaultValue;
+        }
+
+        final String normalized = value.trim();
+        if (normalized.equalsIgnoreCase("true")) {
+            return true;
+        }
+        if (normalized.equalsIgnoreCase("false")) {
+            return false;
+        }
+
+        throw new IllegalArgumentException(
+            key + " must be true or false, found: " + value
         );
     }
 }
