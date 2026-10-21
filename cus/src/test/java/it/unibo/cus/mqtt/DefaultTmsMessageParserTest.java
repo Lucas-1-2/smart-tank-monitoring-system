@@ -83,5 +83,11 @@ final class DefaultTmsMessageParserTest {
         );
     }
 
-    
+    @Test
+    void rejectsNonStringStatus() {
+        assertThrows(
+            IllegalArgumentException.class,
+            () -> parser.parse("{\"status\":123}")
+        );
+    }
 }
