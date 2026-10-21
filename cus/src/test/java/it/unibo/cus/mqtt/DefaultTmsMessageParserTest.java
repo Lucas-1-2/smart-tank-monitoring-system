@@ -59,4 +59,29 @@ final class DefaultTmsMessageParserTest {
             () -> parser.parse("not-json")
         );
     }
+
+    @Test
+    void acceptsPercentageBoundaries() {
+        assertEquals(
+            0.0,
+            parser.parse("{\"status\":\"OK\",\"percentage\":0}")
+        );
+
+        assertEquals(
+            100.0,
+            parser.parse("{\"status\":\"OK\",\"percentage\":100}")
+        );
+    }
+
+    @Test
+    void rejectsNonNumericPercentage() {
+        assertThrows(
+            IllegalArgumentException.class,
+            () -> parser.parse(
+                "{\"status\":\"OK\",\"percentage\":\"42.0\"}"
+            )
+        );
+    }
+
+    
 }

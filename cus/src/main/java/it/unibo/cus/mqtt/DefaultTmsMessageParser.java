@@ -37,9 +37,11 @@ public final class DefaultTmsMessageParser implements TmsMessageParser {
             throw new IllegalArgumentException("Invalid JSON TMS payload", exception);
         }
 
-        final String status = json.getString("status");
-        if (status == null || status.isBlank()) {
-            throw new IllegalArgumentException("TMS JSON field 'status' is required");
+        final Object rawStatus = json.getValue("status");
+        if (!(rawStatus instanceof String status) || status.isBlank()) {
+            throw new IllegalArgumentException(
+                "TMS JSON field 'status' must be a non-empty string"
+            );
         }
 
         return switch (status) {
