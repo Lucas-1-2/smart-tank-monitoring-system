@@ -20,8 +20,9 @@ public final class TmsMqttService implements AutoCloseable {
     private final TmsMessageParser parser;
 
     private volatile boolean running;
+    private boolean closed;
     private Thread connectionThread;
-    private volatile MqttClient client;
+    private MqttClient client;
 
     public TmsMqttService(
         final SystemController controller,
@@ -32,6 +33,9 @@ public final class TmsMqttService implements AutoCloseable {
     }
 
     public synchronized void start() {
+        if (closed) {
+            throw new IllegalStateException("MQTT service has already been closed");
+        }
         if (running) {
             return;
         }
@@ -43,122 +47,184 @@ public final class TmsMqttService implements AutoCloseable {
     }
 
     @Override
-    public synchronized void close() {
-        running = false;
+    public void close() {
+        final Thread threadToStop;
+        final MqttClient clientToClose;
 
-        if (connectionThread != null) {
-            connectionThread.interrupt();
-        }
-
-        final MqttClient localClient = client;
-        if (localClient != null) {
-            try {
-                if (localClient.isConnected()) {
-                    localClient.disconnect();
-                }
-                localClient.close();
-            } catch (final MqttException exception) {
-                System.err.println("[MQTT] Close error: " + exception.getMessage());
+        synchronized (this) {
+            if (closed) {
+                return;
             }
+
+            closed = true;
+            running = false;
+            threadToStop = connectionThread;
+            connectionThread = null;
+            clientToClose = client;
+            client = null;
         }
+
+        if (threadToStop != null) {
+            threadToStop.interrupt();
+        }
+        closeMqttClient(clientToClose);
     }
 
+    /** Retries the initial connection, then leaves reconnections to Paho. */
     private void connectionLoop() {
         while (running && !Thread.currentThread().isInterrupted()) {
             try {
-                if (client == null) {
-                    connectClient();
+                final MqttClient connectedClient = connectClient();
+
+                synchronized (this) {
+                    if (running) {
+                        client = connectedClient;
+                        return;
+                    }
                 }
 
-                Thread.sleep(Config.MQTT_RETRY_DELAY_MS);
-            } catch (final InterruptedException exception) {
-                Thread.currentThread().interrupt();
+                // Shutdown was requested while connectClient() was running.
+                closeMqttClient(connectedClient);
+                return;
             } catch (final MqttException exception) {
-                System.err.println("[MQTT] Connection failed: " + exception.getMessage());
-                closeClientAfterFailure();
+                if (!running || Thread.currentThread().isInterrupted()) {
+                    return;
+                }
+
+                System.err.println(
+                    "[MQTT] Connection failed: " + exception.getMessage()
+                );
                 sleepBeforeRetry();
             }
         }
     }
 
-    private void connectClient() throws MqttException {
+    /** Returns a connected and subscribed client; cleans it up on failure. */
+    private MqttClient connectClient() throws MqttException {
         final String clientId = "assignment03-cus-" + System.currentTimeMillis();
         final MqttClient newClient = new MqttClient(Config.MQTT_BROKER_URI, clientId);
-        client = newClient;
 
-        newClient.setCallback(new MqttCallbackExtended() {
-            @Override
-            public void connectComplete(final boolean reconnect, final String serverURI) {
-                if (!reconnect) {
-                    return;
+        try {
+            newClient.setCallback(new MqttCallbackExtended() {
+                @Override
+                public void connectComplete(
+                    final boolean reconnect,
+                    final String serverURI
+                ) {
+                    if (!reconnect || !running) {
+                        return;
+                    }
+
+                    try {
+                        newClient.subscribe(Config.MQTT_TOPIC, Config.MQTT_QOS);
+                        System.out.println(
+                            "[MQTT] Reconnected to " + serverURI
+                                + ", subscribed to " + Config.MQTT_TOPIC
+                        );
+                    } catch (final MqttException exception) {
+                        System.err.println(
+                            "[MQTT] Subscribe failed: " + exception.getMessage()
+                        );
+                    }
                 }
 
-                try {
-                    newClient.subscribe(Config.MQTT_TOPIC, Config.MQTT_QOS);
-                    System.out.println(
-                        "[MQTT] Reconnected to " + serverURI
-                            + ", subscribed to " + Config.MQTT_TOPIC
-                    );
-                } catch (final MqttException exception) {
-                    System.err.println("[MQTT] Subscribe failed: " + exception.getMessage());
+                @Override
+                public void connectionLost(final Throwable cause) {
+                    if (running) {
+                        final String message = cause == null
+                            ? "unknown cause"
+                            : cause.getMessage();
+                        System.err.println("[MQTT] Connection lost: " + message);
+                    }
                 }
+
+                @Override
+                public void messageArrived(
+                    final String topic,
+                    final MqttMessage message
+                ) {
+                    if (running) {
+                        processMessage(message);
+                    }
+                }
+
+                @Override
+                public void deliveryComplete(final IMqttDeliveryToken token) {
+                    // Not used by a subscriber.
+                }
+            });
+
+            final MqttConnectOptions options = new MqttConnectOptions();
+            options.setAutomaticReconnect(true);
+            options.setCleanSession(true);
+
+            newClient.connect(options);
+
+            // Skip subscribing if the service was closed during connect().
+            if (running) {
+                newClient.subscribe(Config.MQTT_TOPIC, Config.MQTT_QOS);
+                System.out.println(
+                    "[MQTT] Connected to " + Config.MQTT_BROKER_URI
+                        + ", subscribed to " + Config.MQTT_TOPIC
+                );
             }
 
-            @Override
-            public void connectionLost(final Throwable cause) {
-                final String message = cause == null ? "unknown cause" : cause.getMessage();
-                System.err.println("[MQTT] Connection lost: " + message);
-            }
-
-            @Override
-            public void messageArrived(final String topic, final MqttMessage message) {
-                processMessage(message);
-            }
-
-            @Override
-            public void deliveryComplete(final IMqttDeliveryToken token) {
-                // Not used by a subscriber.
-            }
-        });
-
-        final MqttConnectOptions options = new MqttConnectOptions();
-        options.setAutomaticReconnect(true);
-        options.setCleanSession(true);
-
-        newClient.connect(options);
-
-        newClient.subscribe(Config.MQTT_TOPIC, Config.MQTT_QOS);
-        System.out.println(
-            "[MQTT] Connected to " + Config.MQTT_BROKER_URI
-                + ", subscribed to " + Config.MQTT_TOPIC
-        );
+            return newClient;
+        } catch (final MqttException | RuntimeException exception) {
+            closeMqttClient(newClient);
+            throw exception;
+        }
     }
 
     private void processMessage(final MqttMessage message) {
-        final String payload = new String(message.getPayload(), StandardCharsets.UTF_8);
-        final Double value;
+        final String payload = new String(
+            message.getPayload(),
+            StandardCharsets.UTF_8
+        );
 
+        final Double value;
         try {
             value = parser.parse(payload);
         } catch (final IllegalArgumentException exception) {
-            System.err.println("[MQTT] Invalid TMS payload: " + exception.getMessage());
+            // Malformed messages are discarded and do not reset T2.
+            System.err.println(
+                "[MQTT] Invalid TMS payload: " + exception.getMessage()
+            );
+            return;
+        }
+
+        if (!running) {
             return;
         }
 
         controller.onMeasurement(value, System.currentTimeMillis());
-        System.out.println("[MQTT] TMS sample: " + (value == null ? "null" : value));
+        System.out.println(
+            "[MQTT] TMS sample: " + (value == null ? "null" : value)
+        );
     }
 
-    private void closeClientAfterFailure() {
-        final MqttClient localClient = client;
-        client = null;
+    /** Attempts cleanup even when disconnect() fails. */
+    private void closeMqttClient(final MqttClient mqttClient) {
+        if (mqttClient == null) {
+            return;
+        }
 
-        if (localClient != null) {
-            try {
-                localClient.close();
-            } catch (final MqttException ignored) {
-                // Best-effort cleanup before retry.
+        try {
+            if (mqttClient.isConnected()) {
+                mqttClient.disconnect();
             }
+        } catch (final MqttException exception) {
+            System.err.println(
+                "[MQTT] Disconnect error: " + exception.getMessage()
+            );
+        }
+
+        try {
+            mqttClient.close();
+        } catch (final MqttException exception) {
+            System.err.println(
+                "[MQTT] Close error: " + exception.getMessage()
+            );
         }
     }
 
