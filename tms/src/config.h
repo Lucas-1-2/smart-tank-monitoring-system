@@ -74,7 +74,7 @@
 #define MQTT_CLIENT_ID_PREFIX "smart-tank-tms-"
 
 /* Topic sul quale il TMS pubblicherà misure e stati */
-#define MQTT_DATA_TOPIC "unibo/esiot/2025-2026/group06/tms/data"
+#define MQTT_DATA_TOPIC "smart-tank/sam-lucas/tms/data""
 
 /* Attesa prima di un nuovo tentativo di connessione MQTT */
 #define MQTT_RETRY_DELAY_MS 5000UL
@@ -82,11 +82,6 @@
 
 
 /* LED DI STATO DELLA COMUNICAZIONE */
-
-/*
- * TODO: verificare i pin quando avremo la scheda
- * e realizzeremo i collegamenti fisici.
- */
 #define GREEN_LED_PIN 25
 #define RED_LED_PIN 26
 
