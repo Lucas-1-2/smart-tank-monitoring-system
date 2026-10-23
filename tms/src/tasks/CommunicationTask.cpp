@@ -48,13 +48,6 @@ static void startWiFiConnection(CommunicationTaskParams* params) {
     WiFi.mode(WIFI_STA);
     WiFi.setAutoReconnect(true);
     WiFi.begin(params->ssid, params->password);
-
-    // Wait for connection
-    while (WiFi.status() != WL_CONNECTED) {
-        Serial.print(".");
-        delay(params->wifiRetryDelayMs);
-    }
-    Serial.println("\nConnected!");
 }
 
 static bool tryConnectMqtt(CommunicationTaskParams* params) {
@@ -194,8 +187,7 @@ void communicationTask(void* parameter) {
                     now - lastMqttAttemptMs >=
                         params->mqttRetryDelayMs
                 ) {
-                    lastMqttAttemptMs = now;
-
+                    
                     if (tryConnectMqtt(params)) {
                         setCommunicationState(
                             params,
@@ -203,6 +195,7 @@ void communicationTask(void* parameter) {
                             WAITING_FIRST_PUBLISH
                         );
                     }
+                    lastMqttAttemptMs = now;
                 }
 
                 break;
