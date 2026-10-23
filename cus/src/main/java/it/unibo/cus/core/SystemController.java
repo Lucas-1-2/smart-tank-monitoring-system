@@ -67,7 +67,8 @@ public final class SystemController {
                 return;
             }
 
-            final boolean recoveringFromUnconnected = !tmsAvailable;
+            final boolean recoveringFromUnconnected =
+                !tmsAvailable || now - lastValidMeasurementTime >= Config.T2_MS;
             lastValidMeasurementTime = now;
             tmsAvailable = true;
 
