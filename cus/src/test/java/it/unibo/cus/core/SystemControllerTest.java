@@ -8,6 +8,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import it.unibo.cus.Config;
 import it.unibo.cus.model.OperatingMode;
 import it.unibo.cus.model.PublicState;
+import it.unibo.cus.model.SystemSnapshot;
+
 import org.junit.jupiter.api.Test;
 
 class SystemControllerTest {
@@ -153,5 +155,43 @@ class SystemControllerTest {
 
         controller.onMeasurement(60.0, boot + 300 + Config.T1_MS);
         assertEquals(50, controller.getSnapshot().valveOpening());
+    }
+
+    @Test
+    void wcsReceivesLatestStateWithoutLosingMeasurementHistory()
+        throws InterruptedException {
+
+        final long boot = 1_000L;
+        final SystemController controller = new SystemController(boot);
+
+        // First valid measurement: AUTOMATIC, valve 100%.
+        controller.onMeasurement(90.0, boot + 1);
+
+        // T2 expires: UNCONNECTED, valve 5%.
+        controller.tick(boot + Config.T2_MS + 1);
+
+        assertEquals(
+            PublicState.UNCONNECTED,
+            controller.getSnapshot().state()
+        );
+
+        // A new valid measurement restores AUTOMATIC, valve 0%.
+        controller.onMeasurement(
+            20.0,
+            boot + Config.T2_MS + 2
+        );
+
+        // WCS must receive the latest state, not the oldest queued one.
+        final SystemSnapshot snapshot =
+            controller.takeWcsStateUpdate();
+
+        assertEquals(PublicState.AUTOMATIC, snapshot.state());
+        assertEquals(0, snapshot.valveOpening());
+
+        // Measurement history must still contain both samples.
+        assertEquals(
+            2,
+            controller.getMeasurementsSnapshot().size()
+        );
     }
 }

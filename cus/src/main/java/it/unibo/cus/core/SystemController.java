@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ArrayBlockingQueue;
 
 /**
  * Thread-safe owner of the global CUS state.
@@ -22,7 +23,7 @@ public final class SystemController {
     private final Object lock;
     private final AutomaticPolicy automaticPolicy;
     private final MeasurementHistory measurementHistory;
-    private final BlockingQueue<SystemSnapshot> wcsStateUpdates;
+    private final BlockingQueue<Boolean> wcsUpdateSignals;
 
     private OperatingMode mode;
     private boolean tmsAvailable;
@@ -38,7 +39,7 @@ public final class SystemController {
         lock = new Object();
         automaticPolicy = new AutomaticPolicy(Config.L1, Config.L2, Config.T1_MS);
         measurementHistory = new MeasurementHistory(Config.HISTORY_SIZE);
-        wcsStateUpdates = new LinkedBlockingQueue<>();
+        wcsUpdateSignals = new ArrayBlockingQueue<>(1);
 
         mode = OperatingMode.AUTOMATIC;
         tmsAvailable = true;
@@ -228,32 +229,21 @@ public final class SystemController {
         }
     }
 
-    /**
-     * Explicitly enqueues the current state for WCS synchronization (READY or startup).
-     */
-    public void enqueueCurrentSnapshot() {
-        synchronized (lock) {
-            wcsStateUpdates.offer(snapshotLocked());
-        }
+    public void requestWcsStateUpdate() {
+        wcsUpdateSignals.offer(Boolean.TRUE);
     }
 
-    /** Waits for the next ordered state update destined to WCS. */
+    /** Waits for an update request, then reads the latest controller state. */
     public SystemSnapshot takeWcsStateUpdate() throws InterruptedException {
-        return wcsStateUpdates.take();
+        wcsUpdateSignals.take();
+        return getSnapshot();
     }
 
-    private void publishWcsUpdateIfNeededLocked(
-        final PublicState oldState,
-        final int oldValve
-    ) {
+    private void publishWcsUpdateIfNeededLocked(final PublicState oldState, final int oldValve) {
         final PublicState newState = publicStateLocked();
 
         if (oldState != newState || oldValve != valveOpening) {
-            /*
-             * Enqueued while holding the same state lock: queue order follows
-             * the serialization order of global state changes. I/O happens later.
-             */
-            wcsStateUpdates.offer(snapshotLocked());
+            wcsUpdateSignals.offer(Boolean.TRUE);
         }
     }
 
