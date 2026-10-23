@@ -91,9 +91,14 @@ public final class TmsMqttService implements AutoCloseable {
                     return;
                 }
 
-                System.err.println(
-                    "[MQTT] Connection failed: " + exception.getMessage()
-                );
+                System.err.println("========== MQTT ERROR ==========");
+                System.err.println("Broker: " + Config.MQTT_BROKER_URI);
+                System.err.println("Error code: " + exception.getReasonCode());
+                System.err.println("Message: " + exception.getMessage());
+                System.err.println("Cause: " + exception.getCause());
+                exception.printStackTrace();
+                System.err.println("================================");
+
                 sleepBeforeRetry();
             }
         }
