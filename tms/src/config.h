@@ -7,21 +7,12 @@
 
 
 /* SONAR */
-
-// TODO: verificare i pin quando avremo il modello esatto di ESP32
 #define SONAR_TRIG_PIN 5
 #define SONAR_ECHO_PIN 18
 
-/*
- * TODO: la temperatura potrebbe essere letta automaticamente
- * mediante un sensore dedicato.
- * Per ora viene utilizzata una temperatura fissa per calcolare
- * la velocità del suono.
- */
 #define DEFAULT_AIR_TEMPERATURE_C 20.0f
 
 /*
- * TODO: si può scegliere di cambiare
  * Tempo massimo di attesa dell'eco, in microsecondi
 */
 #define SONAR_TIMEOUT_US 30000UL
@@ -31,8 +22,6 @@
  * Distanza tra il sonar e il fondo della tanica.
  * Poiché il sonar rappresenta il piano del 100%,
  * questa è anche l'altezza utile della tanica.
- *
- * TODO: sostituire con la misura reale quando avremo l'hardware.
  */
 #define TANK_HEIGHT_M 1.00f
 
@@ -52,31 +41,26 @@
 
 
 /* WI-FI */
-
-/*
- * TODO: inserire le credenziali della rete utilizzata
- * durante le prove con l'ESP32.
- */
-#define WIFI_SSID "INSERISCI_NOME_RETE"
-#define WIFI_PASSWORD "INSERISCI_PASSWORD"
+#define WIFI_SSID "LPI"
+#define WIFI_PASSWORD "ASSIGNMENT-3"
 
 
 
 /* MQTT */
 
-/* Broker (questa è lab prof)*/
+/* Broker*/
 #define MQTT_BROKER "broker.mqtt-dashboard.com"
 
-/* Porta MQTT standard(per ora) */
+/*Porta MQTT*/
 #define MQTT_PORT 1883
 
-/* Prefisso dell'identificatore dell'ESP32 */
+/*Prefisso dell'identificatore dell'ESP3 */
 #define MQTT_CLIENT_ID_PREFIX "smart-tank-tms-"
 
-/* Topic sul quale il TMS pubblicherà misure e stati */
-#define MQTT_DATA_TOPIC "smart-tank/sam-lucas/tms/data""
+/*Topic TMS pubblicazione misure e stati */
+#define MQTT_DATA_TOPIC "smart-tank/sam-lucas/tms/data"
 
-/* Attesa prima di un nuovo tentativo di connessione MQTT */
+/*Attesa prima di un nuovo tentativo di connessione MQTT*/
 #define MQTT_RETRY_DELAY_MS 5000UL
 
 
