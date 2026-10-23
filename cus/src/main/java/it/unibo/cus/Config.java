@@ -29,7 +29,7 @@ public final class Config {
     private static final String DEFAULT_MQTT_BROKER_URI =
         "tcp://broker.mqtt-dashboard.com:1883";
     private static final String DEFAULT_MQTT_TOPIC =
-        "unibo/esiot/2025-2026/group06/tms/data";
+        "smart-tank/sam-lucas/tms/data";
 
     /* Configurable values. Defaults are used until load() reads cus.properties. */
     public static double L1 = DEFAULT_L1;
