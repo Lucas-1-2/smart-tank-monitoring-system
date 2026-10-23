@@ -20,14 +20,14 @@ public final class Config {
 
     private static final String DEFAULT_HTTP_HOST = "0.0.0.0";
     private static final int DEFAULT_HTTP_PORT = 8080;
-    private static final String DEFAULT_DBS_DIRECTORY = "../dbs";
+    private static final String DEFAULT_DBS_DIRECTORY = "DBS";
 
     private static final boolean DEFAULT_SERIAL_ENABLED = true;
     private static final int DEFAULT_SERIAL_BAUD_RATE = 115_200;
 
     private static final boolean DEFAULT_MQTT_ENABLED = true;
     private static final String DEFAULT_MQTT_BROKER_URI =
-        "tcp://broker.mqtt-dashboard.com:1883";
+        "tcp://broker.mqttdashboard.com:1883";
     private static final String DEFAULT_MQTT_TOPIC =
         "smart-tank/sam-lucas/tms/data";
 

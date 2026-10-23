@@ -7,12 +7,12 @@ cus.t2.ms=10000
 # HTTP / DBS
 cus.http.host=0.0.0.0
 cus.http.port=8080
-cus.dbs.dir=../dbs
+cus.dbs.dir=DBS
 
 # MQTT
 cus.mqtt.enabled=true
-cus.mqtt.broker=tcp://broker.mqtt-dashboard.com:1883
-cus.mqtt.topic=unibo/esiot/2025-2026/group06/tms/data
+cus.mqtt.broker=tcp://broker.mqttdashboard.com:1883
+cus.mqtt.topic=smart-tank/sam-lucas/tms/data
 
 # Serial
 cus.serial.enabled=true
