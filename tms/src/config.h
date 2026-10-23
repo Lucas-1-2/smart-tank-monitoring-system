@@ -8,7 +8,7 @@
 
 /* SONAR */
 #define SONAR_TRIG_PIN 5
-#define SONAR_ECHO_PIN 18
+#define SONAR_ECHO_PIN 15
 
 #define DEFAULT_AIR_TEMPERATURE_C 20.0f
 
@@ -42,14 +42,14 @@
 
 /* WI-FI */
 #define WIFI_SSID "LPI"
-#define WIFI_PASSWORD "ASSIGNMENT-3"
+#define WIFI_PASSWORD "assignment-3"
 
 
 
 /* MQTT */
 
 /* Broker*/
-#define MQTT_BROKER "broker.mqtt-dashboard.com"
+#define MQTT_BROKER "broker.mqttdashboard.com"
 
 /*Porta MQTT*/
 #define MQTT_PORT 1883
