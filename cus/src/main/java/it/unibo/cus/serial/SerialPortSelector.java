@@ -1,0 +1,97 @@
+package it.unibo.cus.serial;
+
+import com.fazecast.jSerialComm.SerialPort;
+
+import java.awt.GraphicsEnvironment;
+import java.lang.reflect.InvocationTargetException;
+import java.util.Locale;
+
+import javax.swing.JOptionPane;
+import javax.swing.SwingUtilities;
+
+/** Selects the WCS serial port through a small graphical dialog. */
+public final class SerialPortSelector {
+
+    private SerialPortSelector() {
+    }
+
+    /**
+     * Displays all available serial ports and returns the selected port name.
+     * Arduino-like devices are preferred as the initial selection.
+     */
+    public static String selectPort()
+        throws InterruptedException, InvocationTargetException {
+
+        if (GraphicsEnvironment.isHeadless()) {
+            throw new IllegalStateException(
+                "No graphical environment available; set cus.serial.port in cus.properties"
+            );
+        }
+
+        final SerialPort[] ports = SerialPort.getCommPorts();
+        if (ports.length == 0) {
+            throw new IllegalStateException("No serial ports detected");
+        }
+
+        final PortOption[] options = new PortOption[ports.length];
+        PortOption preferredOption = null;
+
+        for (int i = 0; i < ports.length; i++) {
+            options[i] = new PortOption(ports[i]);
+
+            if (preferredOption == null && isArduinoPort(ports[i])) {
+                preferredOption = options[i];
+            }
+        }
+
+        if (preferredOption == null) {
+            preferredOption = options[0];
+        }
+
+        final PortOption initialOption = preferredOption;
+        final PortOption[] selectedOption = new PortOption[1];
+
+        SwingUtilities.invokeAndWait(() -> {
+            selectedOption[0] = (PortOption) JOptionPane.showInputDialog(
+                null,
+                "Select the serial port connected to Arduino:",
+                "WCS serial port selection",
+                JOptionPane.QUESTION_MESSAGE,
+                null,
+                options,
+                initialOption
+            );
+        });
+
+        if (selectedOption[0] == null) {
+            throw new IllegalStateException("Serial port selection cancelled");
+        }
+
+        return selectedOption[0].port().getSystemPortName();
+    }
+
+    private static boolean isArduinoPort(final SerialPort port) {
+        final String portInformation =
+            safe(port.getDescriptivePortName()) + " " + safe(port.getPortDescription());
+
+        return portInformation.toLowerCase(Locale.ROOT).contains("arduino");
+    }
+
+    private static String safe(final String value) {
+        return value == null ? "" : value.trim();
+    }
+
+    private record PortOption(SerialPort port) {
+        @Override
+        public String toString() {
+            final String portName = port.getSystemPortName();
+            final String description = safe(port.getDescriptivePortName());
+
+            if (description.isEmpty()) {
+                return portName;
+            }
+
+            return portName + " - " + description;
+        }
+    }
+}
