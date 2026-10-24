@@ -41,8 +41,8 @@
 
 
 /* WI-FI */
-#define WIFI_SSID "LPI"
-#define WIFI_PASSWORD "assignment-3"
+#define WIFI_SSID "GUEST-FASTWEB-vjX8Y2-2G"
+#define WIFI_PASSWORD "7e6943dd"
 
 
 

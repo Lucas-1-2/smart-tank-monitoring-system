@@ -4,9 +4,7 @@
 #include "data/WaterLevelData.h"
 
 void waterLevelTask(void* parameter) {
-    WaterLevelTaskParams* params =
-        static_cast<WaterLevelTaskParams*>(parameter);
-
+    WaterLevelTaskParams* params = static_cast<WaterLevelTaskParams*>(parameter);
     TickType_t lastWakeTime = xTaskGetTickCount();
     const TickType_t taskPeriod = pdMS_TO_TICKS(params->measurementPeriodMs);
 
@@ -15,34 +13,27 @@ void waterLevelTask(void* parameter) {
 
         WaterLevelData measurement;
 
-        measurement.measurementValid = distance >= 0.0f;
+        measurement.measurementValid = 
+            distance >= 0.0f &&
+            distance <= params->tankHeightM;
 
         measurement.distanceM = distance;
-
         measurement.waterLevelM = 0.0f;
-
         measurement.waterPercentage = 0.0f;
 
         if (!measurement.measurementValid) {
             Serial.println("Nessun eco rilevato");
 
         } else {
-            float waterLevel =
-                params->tankHeightM - distance;
+            float waterLevel = params->tankHeightM - distance;
 
-            if (waterLevel < 0.0f) {
-                waterLevel = 0.0f;
-            }
+            // if (waterLevel > params->tankHeightM) {
+            //     waterLevel = params->tankHeightM;
+            // }
 
-            if (waterLevel > params->tankHeightM) {
-                waterLevel = params->tankHeightM;
-            }
-
-            float waterPercentage =
-                (waterLevel / params->tankHeightM) * 100.0f;
+            float waterPercentage = (waterLevel / params->tankHeightM) * 100.0f;
 
             measurement.waterLevelM = waterLevel;
-
             measurement.waterPercentage = waterPercentage;
 
             Serial.print("Distanza dalla superficie: ");
@@ -57,7 +48,6 @@ void waterLevelTask(void* parameter) {
         }
 
         xQueueOverwrite(params->measurementQueue, &measurement);
-
         vTaskDelayUntil(&lastWakeTime, taskPeriod);
     }
 }
