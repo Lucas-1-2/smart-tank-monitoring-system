@@ -19,11 +19,11 @@
 
 
 /*
- * Distanza tra il sonar e il fondo della tanica.
+ * Distanza tra il sonar e il fondo della tanica (in metri).
  * Poiché il sonar rappresenta il piano del 100%,
  * questa è anche l'altezza utile della tanica.
  */
-#define TANK_HEIGHT_M 1.00f
+#define TANK_HEIGHT_M 0.35f
 
 
 
@@ -36,7 +36,7 @@
 #define COMMUNICATION_TASK_PERIOD_MS 100UL
 
 /* Intervallo tra due controlli durante la connessione */
-#define WIFI_RETRY_DELAY_MS 500UL
+#define WIFI_RETRY_DELAY_MS 2000UL
 
 
 
