@@ -7,6 +7,7 @@ import it.unibo.cus.model.Measurement;
 import it.unibo.cus.model.OperatingMode;
 import it.unibo.cus.model.SystemSnapshot;
 
+import io.vertx.core.http.HttpMethod;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Promise;
 import io.vertx.core.http.HttpServerResponse;
@@ -18,6 +19,7 @@ import io.vertx.ext.web.RoutingContext;
 import io.vertx.ext.web.handler.BodyHandler;
 import io.vertx.ext.web.handler.FileSystemAccess;
 import io.vertx.ext.web.handler.StaticHandler;
+import io.vertx.ext.web.handler.CorsHandler;
 
 import java.nio.file.Path;
 import java.util.List;
@@ -36,6 +38,17 @@ public final class HttpService extends AbstractVerticle {
     @Override
     public void start(final Promise<Void> startPromise) {
         final Router router = Router.router(vertx);
+
+        router.route("/api/*").handler(
+            CorsHandler.create()
+                .addOrigin("http://localhost:5500")
+                .addOrigin("http://127.0.0.1:5500")
+                .allowedMethod(HttpMethod.GET)
+                .allowedMethod(HttpMethod.POST)
+                .allowedMethod(HttpMethod.OPTIONS)
+                .allowedHeader("Content-Type")
+                .allowedHeader("Accept")
+        );
 
         /* BodyHandler is required for POST JSON bodies, as in the course examples. */
         router.post("/api/*").handler(BodyHandler.create());
