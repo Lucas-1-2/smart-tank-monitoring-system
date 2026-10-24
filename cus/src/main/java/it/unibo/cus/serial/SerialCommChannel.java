@@ -30,11 +30,7 @@ public final class SerialCommChannel {
         serialPort.setNumStopBits(SerialPort.ONE_STOP_BIT);
         serialPort.setParity(SerialPort.NO_PARITY);
 
-        /* Kept aligned with the already working Smart Hangar project. */
-        serialPort.setFlowControl(
-            SerialPort.FLOW_CONTROL_RTS_ENABLED
-                | SerialPort.FLOW_CONTROL_CTS_ENABLED
-        );
+        serialPort.setFlowControl(SerialPort.FLOW_CONTROL_DISABLED);
 
         if (!serialPort.openPort()) {
             throw new IllegalStateException("Cannot open serial port " + port);
