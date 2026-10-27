@@ -2,72 +2,99 @@
 #define CONFIG_H
 
 
+
+// =====================================================
+// ================= SERIAL COMMUNICATION ==============
+// =====================================================
+
+
 #define SERIAL_BAUD_RATE 115200
 
 
 
-/* SONAR */
+// =====================================================
+// ===================== HARDWARE ======================
+// =====================================================
+
+// SONAR
 #define SONAR_TRIG_PIN 5
 #define SONAR_ECHO_PIN 18
 
+// COMMUNICATION STATUS LEDS
+#define GREEN_LED_PIN 25
+#define RED_LED_PIN 26
+
+
+
+// =====================================================
+// ===================== SONAR =========================
+// =====================================================
+
+// Assumed air temperature used to calculate the speed of sound (°C)
 #define DEFAULT_AIR_TEMPERATURE_C 20.0f
 
-/*
- * Tempo massimo di attesa dell'eco, in microsecondi
-*/
+// Echo detection timeout (microseconds)
 #define SONAR_TIMEOUT_US 30000UL
 
 
-/*
- * Distanza tra il sonar e il fondo della tanica.
- * Poiché il sonar rappresenta il piano del 100%,
- * questa è anche l'altezza utile della tanica.
- */
+
+// =====================================================
+// ====================== TANK =========================
+// =====================================================
+
+// Distance between the sensor and the tank bottom (m).
+// The sensor plane represents the 100% water level.
 #define TANK_HEIGHT_M 1.00f
 
 
 
-/* TASK PERIODS */
+// =====================================================
+// =================== TASK PERIODS ====================
+// =====================================================
 
-/* Frequenza di esecuzione del task di misurazione */
+// Water level measurement task period (ms)
 #define WATER_LEVEL_TASK_PERIOD_MS 2000UL
 
-/* Frequenza di controllo del task di comunicazione */
+// Communication task period (ms)
 #define COMMUNICATION_TASK_PERIOD_MS 100UL
 
-/* Intervallo tra due controlli durante la connessione */
+
+
+// =====================================================
+// ====================== WI-FI ========================
+// =====================================================
+
+
+#define WIFI_SSID "LPI"
+#define WIFI_PASSWORD "ASSIGNMENT-3"
+
+// Interval between status messages while waiting for Wi-Fi (ms)
 #define WIFI_RETRY_DELAY_MS 500UL
 
 
 
-/* WI-FI */
-#define WIFI_SSID "LPI"
-#define WIFI_PASSWORD "ASSIGNMENT-3"
+
+// =====================================================
+// ======================= MQTT ========================
+// =====================================================
 
 
-
-/* MQTT */
-
-/* Broker*/
+// MQTT broker hostname or IP address
 #define MQTT_BROKER "broker.mqtt-dashboard.com"
 
-/*Porta MQTT*/
+// MQTT broker TCP port
 #define MQTT_PORT 1883
 
-/*Prefisso dell'identificatore dell'ESP3 */
+// Client identifier prefix; a random hexadecimal suffix is appended
 #define MQTT_CLIENT_ID_PREFIX "smart-tank-tms-"
 
-/*Topic TMS pubblicazione misure e stati */
+// Topic used to publish measurements and sensor status.
+// The CUS must subscribe to this topic.
 #define MQTT_DATA_TOPIC "smart-tank/sam-lucas/tms/data"
 
-/*Attesa prima di un nuovo tentativo di connessione MQTT*/
+// Interval between MQTT connection attempts (ms)
 #define MQTT_RETRY_DELAY_MS 5000UL
 
-
-
-/* LED DI STATO DELLA COMUNICAZIONE */
-#define GREEN_LED_PIN 25
-#define RED_LED_PIN 26
 
 
 #endif
