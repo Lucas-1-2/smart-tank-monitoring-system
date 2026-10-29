@@ -104,9 +104,5 @@ void setup() {
 }
 
 void loop() {
-    /*
-     * Tutta la logica applicativa è gestita dai task FreeRTOS creati
-     * in setup(). Il task Arduino associato a loop() non è necessario.
-     */
     vTaskSuspend(nullptr);
 }
