@@ -14,6 +14,7 @@
                 <h1>Tank Monitoring Dashboard</h1>
                 <p class="subtitle">Remote monitoring and manual control</p>
             </div>
+            <!-- Connection status and last successful update from the CUS. -->
             <div class="connection-panel" aria-live="polite">
                 <span id="connection-indicator" class="connection-indicator unavailable"></span>
                 <div>
@@ -23,6 +24,7 @@
             </div>
         </header>
 
+        <!-- System values received from the CUS. -->
         <section class="summary-grid" aria-label="System summary">
             <article class="summary-card">
                 <span class="card-label">System state</span>
@@ -40,6 +42,7 @@
             </article>
         </section>
 
+        <!-- Operator controls: mode selection and manual valve opening. -->
         <section class="panel controls-panel">
             <div class="panel-heading">
                 <div>
@@ -71,6 +74,7 @@
             </div>
         </section>
 
+        <!-- Water level history loaded by the chart module. -->
         <section class="panel chart-panel">
             <div class="panel-heading">
                 <div>
@@ -85,6 +89,7 @@
         </section>
     </main>
 
+    <!-- Load Chart.js before the dashboard module. -->
     <script src="lib/chart.umd.min.js"></script>
     <script type="module" src="js/dashboard.js"></script>
 </body>

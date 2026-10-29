@@ -1,13 +1,7 @@
-Optional offline Chart.js location.
+Chart.js is already included in this folder as chart.umd.min.js.
 
-To run the dashboard without Internet access, place the Chart.js UMD build here as:
+index.html loads this local file before js/dashboard.js.
+The chart does not need an Internet connection or a CDN link.
 
-chart.umd.min.js
-
-Then change index.html from the CDN script to:
-
-<script src="lib/chart.umd.min.js"></script>
-
-Otherwise:
-
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+If you update Chart.js, keep the filename chart.umd.min.js
+or update the script path in index.html.

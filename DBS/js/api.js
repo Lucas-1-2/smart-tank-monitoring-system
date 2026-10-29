@@ -1,6 +1,20 @@
+/**
+ * Sends HTTP requests to the CUS.
+ * @module api
+ */
 import { CONFIG } from "./config.js";
 
+/**
+ * Error used when a CUS request fails.
+ */
 export class ApiError extends Error {
+    /**
+     * Creates an error with HTTP or network details.
+     * @param {string} message - Error message.
+     * @param {Object} [options] - Extra error details.
+     * @param {number|null} [options.status=null] - HTTP status, when available.
+     * @param {boolean} [options.network=false] - True for a network error or timeout.
+     */
     constructor(message, { status = null, network = false } = {}) {
         super(message);
         this.name = "ApiError";
@@ -9,6 +23,15 @@ export class ApiError extends Error {
     }
 }
 
+/**
+ * Sends a request and reads the JSON response.
+ * The request has a timeout. Failed requests throw an ApiError.
+ *
+ * @param {string} path - Path of the CUS API endpoint.
+ * @param {Object} [options] - Options passed to fetch().
+ * @returns {Promise<*>} JSON data, or null if the response has no JSON body.
+ * @throws {ApiError} If the request fails or times out.
+ */
 async function fetchJson(path, options = {}) {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), CONFIG.REQUEST_TIMEOUT_MS);
@@ -60,14 +83,27 @@ async function fetchJson(path, options = {}) {
     }
 }
 
+/**
+ * Gets the current system state from the CUS.
+ * @returns {Promise<Object|null>} Current state data.
+ */
 export function getState() {
     return fetchJson("/api/state");
 }
 
+/**
+ * Gets the water level history from the CUS.
+ * @returns {Promise<Array|Object|null>} Measurements data.
+ */
 export function getMeasurements() {
     return fetchJson("/api/measurements");
 }
 
+/**
+ * Requests a new operating mode.
+ * @param {string} mode - New mode (AUTOMATIC or MANUAL).
+ * @returns {Promise<*>} CUS response.
+ */
 export function setMode(mode) {
     return fetchJson("/api/mode", {
         method: "POST",
@@ -75,6 +111,11 @@ export function setMode(mode) {
     });
 }
 
+/**
+ * Requests a new valve opening.
+ * @param {number} opening - Opening percentage, from 0 to 100.
+ * @returns {Promise<*>} CUS response.
+ */
 export function setValveOpening(opening) {
     return fetchJson("/api/valve", {
         method: "POST",

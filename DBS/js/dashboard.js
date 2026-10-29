@@ -1,5 +1,10 @@
-// ORCHESTRATORE
-
+/**
+ * Runs the DBS page and handles the operator controls.
+ * It reads state and measurements from the CUS in separate polling loops.
+ * The CUS is the source of truth for the system state.
+ *
+ * @module dashboard
+ */
 import { CONFIG } from "./config.js";
 import {
     ApiError,
@@ -10,13 +15,17 @@ import {
 } from "./api.js";
 import { initWaterLevelChart, updateWaterLevelChart } from "./chart.js";
 
+/** Valid modes returned by the CUS. */
 const SystemMode = Object.freeze({
     AUTOMATIC: "AUTOMATIC",
     MANUAL: "MANUAL",
     UNCONNECTED: "UNCONNECTED"
 });
 
-// Copia locale della dashboard dell'ultima informazione conosciuta
+/**
+ * Last valid state received from the CUS and local UI flags.
+ * Requests do not change the shown values until the CUS sends a new state.
+ */
 const dashboardState = {
     connectionAvailable: false,
     mode: null,
@@ -29,8 +38,10 @@ const dashboardState = {
     sliderEditing: false
 };
 
+/** HTML elements used to update the dashboard. */
 const elements = {};
 
+/** Finds and stores the HTML elements used by the dashboard. */
 function cacheElements() {
     elements.connectionIndicator = document.getElementById("connection-indicator");
     elements.connectionLabel = document.getElementById("connection-label");
@@ -48,15 +59,32 @@ function cacheElements() {
     elements.chartCanvas = document.getElementById("water-level-chart");
 }
 
+/**
+ * Checks if a value is a percentage from 0 to 100.
+ * @param {*} value - Value to check.
+ * @returns {boolean} True if the value is valid.
+ */
 function isValidPercentage(value) {
     return Number.isFinite(value) && value >= 0 && value <= 100;
 }
 
+/**
+ * Converts a mode value to one of the known system modes.
+ * @param {*} mode - Mode from the CUS.
+ * @returns {string|null} Known mode name, or null.
+ */
 function normalizeMode(mode) {
     const normalized = String(mode || "").toUpperCase();
     return Object.values(SystemMode).includes(normalized) ? normalized : null;
 }
 
+/**
+ * Checks the CUS state and saves it in dashboardState.
+ * A valid response also updates the connection status and update time.
+ *
+ * @param {Object} payload - State data from the CUS.
+ * @throws {Error} If the state contains invalid values.
+ */
 function applyStatePayload(payload) {
     if (!payload || typeof payload !== "object") {
         throw new Error("Invalid state payload");
@@ -81,6 +109,14 @@ function applyStatePayload(payload) {
     dashboardState.lastSuccessfulUpdate = new Date();
 }
 
+/**
+ * Checks the measurements received from the CUS.
+ * The response can be an array or an object with a measurements array.
+ *
+ * @param {Array|Object} payload - Measurements response.
+ * @returns {Array<Object>} Items with timestamp and value fields.
+ * @throws {Error} If the response contains invalid values.
+ */
 function normalizeMeasurements(payload) {
     const items = Array.isArray(payload) ? payload : payload?.measurements;
     if (!Array.isArray(items)) {
@@ -100,19 +136,35 @@ function normalizeMeasurements(payload) {
     });
 }
 
+/**
+ * Formats a percentage for the page.
+ * @param {*} value - Value to format.
+ * @returns {string} Rounded percentage, or "--" if invalid.
+ */
 function formatPercentage(value) {
     return isValidPercentage(value) ? `${Math.round(value)}%` : "--";
 }
 
+/**
+ * Formats the time of the last successful state request.
+ * @param {Date|null} date - Last update time.
+ * @returns {string} Local time, or "--" if not available.
+ */
 function formatLastUpdate(date) {
     return date ? date.toLocaleTimeString() : "--";
 }
 
+/**
+ * Shows the result of an operator request.
+ * @param {string} [message=""] - Text to show.
+ * @param {string} [type=""] - CSS class, such as success or error.
+ */
 function setRequestMessage(message = "", type = "") {
     elements.requestMessage.textContent = message;
     elements.requestMessage.className = `request-message${type ? ` ${type}` : ""}`;
 }
 
+/** Updates the CUS connection indicator and last update time. */
 function renderConnection() {
     const available = dashboardState.connectionAvailable;
     elements.connectionIndicator.classList.toggle("available", available);
@@ -121,6 +173,7 @@ function renderConnection() {
     elements.lastUpdate.textContent = `Last update: ${formatLastUpdate(dashboardState.lastSuccessfulUpdate)}`;
 }
 
+/** Shows the current mode, water level and valve opening. */
 function renderSummary() {
     elements.systemMode.textContent = dashboardState.connectionAvailable
         ? dashboardState.mode
@@ -132,6 +185,10 @@ function renderSummary() {
         : formatPercentage(dashboardState.waterLevel);
 }
 
+/**
+ * Updates the mode button.
+ * The button works only when the CUS is available and the mode is valid.
+ */
 function renderModeControl() {
     const mode = dashboardState.mode;
     const enabled = dashboardState.connectionAvailable
@@ -155,6 +212,11 @@ function renderModeControl() {
     }
 }
 
+/**
+ * Updates the valve slider.
+ * The slider works only in MANUAL mode.
+ * Its value is not overwritten while the operator is moving it.
+ */
 function renderValveControl() {
     const enabled = dashboardState.connectionAvailable
         && dashboardState.mode === SystemMode.MANUAL
@@ -180,6 +242,7 @@ function renderValveControl() {
     }
 }
 
+/** Updates all dashboard values and controls. */
 function renderDashboard() {
     renderConnection();
     renderSummary();
@@ -187,11 +250,21 @@ function renderDashboard() {
     renderValveControl();
 }
 
+/**
+ * Marks the CUS as unavailable and disables the controls.
+ * The last received values are kept on the page.
+ */
 function markCusUnavailable() {
     dashboardState.connectionAvailable = false;
     renderDashboard();
 }
 
+/**
+ * Reads the current state and updates the dashboard.
+ * If the request fails, the CUS is marked as unavailable.
+ *
+ * @returns {Promise<boolean>} True if the state was updated.
+ */
 async function refreshState() {
     try {
         const payload = await getState();
@@ -205,6 +278,12 @@ async function refreshState() {
     }
 }
 
+/**
+ * Reads the measurements and updates the chart.
+ * A chart error does not change the CUS connection status.
+ *
+ * @returns {Promise<boolean>} True if the chart data was updated.
+ */
 async function refreshMeasurements() {
     try {
         const payload = await getMeasurements();
@@ -221,16 +300,28 @@ async function refreshMeasurements() {
     }
 }
 
+/**
+ * Updates the system state at regular intervals.
+ * The next request starts after the current one has finished.
+ */
 async function statePollingLoop() {
     await refreshState();
     setTimeout(statePollingLoop, CONFIG.STATE_POLL_INTERVAL_MS);
 }
 
+/**
+ * Updates the chart at regular intervals.
+ * This loop runs separately from the state polling loop.
+ */
 async function measurementsPollingLoop() {
     await refreshMeasurements();
     setTimeout(measurementsPollingLoop, CONFIG.MEASUREMENTS_POLL_INTERVAL_MS);
 }
 
+/**
+ * Sends a mode change request when the operator clicks the button.
+ * The new mode is shown only after the CUS confirms its state.
+ */
 async function handleModeClick() {
     if (dashboardState.modeRequestPending || !dashboardState.connectionAvailable) {
         return;
@@ -269,11 +360,19 @@ async function handleModeClick() {
     }
 }
 
+/**
+ * Shows the selected valve opening while the slider moves.
+ * No request is sent to the CUS yet.
+ */
 function handleSliderInput() {
     dashboardState.sliderEditing = true;
     elements.selectedValveValue.textContent = `Selected: ${elements.valveSlider.value}%`;
 }
 
+/**
+ * Sends the valve opening when the operator releases the slider.
+ * After the request, the DBS reads the value confirmed by the CUS.
+ */
 async function handleSliderChange() {
     if (dashboardState.valveRequestPending
         || !dashboardState.connectionAvailable
@@ -307,12 +406,14 @@ async function handleSliderChange() {
     }
 }
 
+/** Connects the mode button and valve slider to their handlers. */
 function registerEventHandlers() {
     elements.modeButton.addEventListener("click", handleModeClick);
     elements.valveSlider.addEventListener("input", handleSliderInput);
     elements.valveSlider.addEventListener("change", handleSliderChange);
 }
 
+/** Starts the chart and shows an error if Chart.js is missing. */
 function startChart() {
     try {
         initWaterLevelChart(elements.chartCanvas);
@@ -323,6 +424,9 @@ function startChart() {
     }
 }
 
+/**
+ * Sets up the page, registers events and starts both polling loops.
+ */
 function start() {
     cacheElements();
     registerEventHandlers();

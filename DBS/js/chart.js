@@ -1,5 +1,15 @@
+/**
+ * Creates and updates the water level chart.
+ * Chart.js is loaded by index.html.
+ * @module chart
+ */
 let chart = null;
 
+/**
+ * Converts a measurement timestamp to local time.
+ * @param {number|string|null|undefined} timestamp - Measurement time.
+ * @returns {string} Local time, or an empty string if no time is given.
+ */
 function formatTimestamp(timestamp) {
     if (timestamp === null || timestamp === undefined) {
         return "";
@@ -17,7 +27,13 @@ function formatTimestamp(timestamp) {
     return String(timestamp);
 }
 
-// Crea il grafico iniziale
+/**
+ * Creates an empty line chart for the water level.
+ * The Y axis goes from 0 to 100 percent.
+ *
+ * @param {HTMLCanvasElement} canvas - Canvas used to draw the chart.
+ * @throws {Error} If Chart.js is not loaded.
+ */
 export function initWaterLevelChart(canvas) {
     if (!window.Chart) {
         throw new Error("Chart.js is not available");
@@ -64,7 +80,12 @@ export function initWaterLevelChart(canvas) {
     });
 }
 
-// Aggiorna i valori
+/**
+ * Shows the latest measurements on the chart.
+ * Null water levels are shown as gaps.
+ *
+ * @param {Array<Object>} measurements - Items with timestamp and value fields.
+ */
 export function updateWaterLevelChart(measurements) {
     if (!chart) {
         return;
