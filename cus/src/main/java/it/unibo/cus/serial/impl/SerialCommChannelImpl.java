@@ -26,10 +26,8 @@ public final class SerialCommChannelImpl implements SerialCommChannel {
      *
      * @param port the serial port name
      * @param rate the serial baud rate
-     * @throws Exception if the serial port cannot be opened
      */
-    public SerialCommChannelImpl(final String port, final int rate) throws Exception {
-        queue = new ArrayBlockingQueue<>(MESSAGE_QUEUE_CAPACITY);
+    public SerialCommChannelImpl(final String port, final int rate) {        queue = new ArrayBlockingQueue<>(MESSAGE_QUEUE_CAPACITY);
         currentMsg = new StringBuilder();
 
         serialPort = SerialPort.getCommPort(port);

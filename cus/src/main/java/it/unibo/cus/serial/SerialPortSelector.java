@@ -9,15 +9,26 @@ import java.util.Locale;
 import javax.swing.JOptionPane;
 import javax.swing.SwingUtilities;
 
-/** Selects the WCS serial port through a small graphical dialog. */
+/**
+ * Provides a graphical dialog to select the WCS serial port.
+ *
+ * The user can choose from the available serial ports.
+ * Arduino devices are preferred when available.
+ */
 public final class SerialPortSelector {
 
     private SerialPortSelector() {
     }
 
     /**
-     * Displays all available serial ports and returns the selected port name.
-     * Arduino-like devices are preferred as the initial selection.
+     * Shows the available serial ports and waits for the user's selection.
+     * Arduino devices are preferred as the initial selection.
+     *
+     * @return the name of the selected serial port
+     * @throws IllegalStateException if no graphical environment or serial ports
+     *         are available, or if the user cancels the selection
+     * @throws InterruptedException if the selection is interrupted
+     * @throws InvocationTargetException if the dialog cannot be displayed
      */
     public static String selectPort()
         throws InterruptedException, InvocationTargetException {

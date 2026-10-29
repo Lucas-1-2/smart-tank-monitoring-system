@@ -3,7 +3,7 @@ package it.unibo.cus.model;
 /**
  * One TMS measurement retained for the dashboard graph.
  * @param timestamp measurement reception time in milliseconds since epoch
- * @param value water level percentage, null for an invalid/unavailable sample
+ * @param value water level percentage, or null for NO_ECHO
  */
 public record Measurement(long timestamp, Double value) {
     public Measurement {

@@ -17,12 +17,27 @@ import io.vertx.core.Vertx;
 
 import java.util.concurrent.atomic.AtomicReference;
 
-/** Application entry point for the Control Unit Subsystem. */
+/**
+ * Main entry point of the Control Unit Subsystem (CUS).
+ *
+ * Creates the system controller and starts the HTTP, MQTT and serial services.
+ * It also starts the control timer and manages the application shutdown.
+ *
+ * The services use the system controller to access and update the shared state.
+ */
 public final class RunCus {
 
     private RunCus() {
     }
 
+    /**
+     * Starts the CUS application.
+     *
+     * Validates the configuration, creates the main components and starts
+     * the enabled services.
+     *
+     * @param args command-line arguments, not used
+     */
     public static void main(final String[] args) {
         try {
             Config.validate();
@@ -61,6 +76,14 @@ public final class RunCus {
         }
     }
 
+    /**
+     * Creates and deploys the HTTP service.
+     *
+     * The service handles requests from DBS and uses the system controller.
+     *
+     * @param vertx the Vert.x instance
+     * @param controller the system controller
+     */
     private static void startHttpService(
         final Vertx vertx,
         final SystemController controller
@@ -75,6 +98,15 @@ public final class RunCus {
         });
     }
 
+    /**
+     * Starts the serial communication with WCS.
+     *
+     * Selects the serial port, creates the communication channel and
+     * starts the WCS agent. Startup errors are reported to the console.
+     *
+     * @param controller the system controller
+     * @param serialAgentRef a reference to the agent used during shutdown
+     */
     private static void startSerialService(
         final SystemController controller,
         final AtomicReference<WcsSerialAgent> serialAgentRef
@@ -120,6 +152,16 @@ public final class RunCus {
         }
     }
 
+    /**
+     * Registers a hook to close the application services.
+     *
+     * When the application stops, the hook closes the serial agent,
+     * the MQTT service and the Vert.x instance.
+     *
+     * @param vertx the Vert.x instance to close
+     * @param serialAgentRef a reference to the serial agent
+     * @param mqttServiceRef a reference to the MQTT service
+     */
     private static void registerShutdownHook(
         final Vertx vertx,
         final AtomicReference<WcsSerialAgent> serialAgentRef,
@@ -142,6 +184,9 @@ public final class RunCus {
         }, "cus-shutdown"));
     }
 
+    /**
+     * Prints the current CUS configuration to the console.
+     */
     private static void printConfiguration() {
         System.out.println("[CUS] Starting Assignment 03 Control Unit Subsystem");
         System.out.println("[CUS] L1=" + Config.L1 + "% L2=" + Config.L2 + "%");

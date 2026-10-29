@@ -5,10 +5,10 @@ import it.unibo.cus.core.api.AutomaticPolicy;
 /**
  * Finite-state implementation of the AUTOMATIC valve policy.
  *
- * LOW:          x <= L1 -> valve 0%
- * MID_WAITING:  L1 < x < L2 for less than T1 -> keep previous opening
- * MID_ACTIVE:   L1 < x < L2 for at least T1 -> valve 50%
- * HIGH:         x >= L2 -> valve 100%
+ * LOW: {@code x <= L1} - valve 0%
+ * MID_WAITING: {@code L1 < x && x < L2} - keep the opening until T1
+ * MID_ACTIVE: {@code L1 < x && x < L2} - valve 50%
+ * HIGH: {@code x >= L2} - valve 100%
  */
 public final class AutomaticPolicyImpl implements AutomaticPolicy {
 
