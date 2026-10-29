@@ -31,15 +31,25 @@ void DisplayTask::tick() {
 }
 
 void DisplayTask::updateDisplay(SystemMode mode, int valveOpening) {
-    String modeRow = F("Mode: ");
-    modeRow += toString(mode);
+    char modeRow[LCD_COLUMNS + 1];
+    char valveRow[LCD_COLUMNS + 1];
 
-    String valveRow = F("Valve: ");
-    valveRow += valveOpening;
-    valveRow += '%';
+    snprintf(
+        modeRow,
+        sizeof(modeRow),
+        "Mode: %s",
+        toString(mode)
+    );
 
-    writePaddedRow(0, modeRow.c_str());
-    writePaddedRow(1, valveRow.c_str());
+    snprintf(
+        valveRow,
+        sizeof(valveRow),
+        "Valve: %d%%",
+        valveOpening
+    );
+
+    writePaddedRow(0, modeRow);
+    writePaddedRow(1, valveRow);
 }
 
 void DisplayTask::writePaddedRow(int row, const char* text) {
