@@ -1,0 +1,220 @@
+\section{Tank Monitoring Subsystem (TMS)}
+\label{sec:tms}
+
+Il Tank Monitoring Subsystem (TMS) acquisisce il livello di
+riempimento della tanica e comunica le misure al CUS tramite MQTT.
+
+
+\subsection{Architettura software}
+\label{subsec:tms-architecture}
+
+Il firmware adotta un'architettura task-based basata su FreeRTOS,
+con due task eseguiti su core distinti.
+Il \texttt{WaterLevelTask}, assegnato al core 0, effettua
+le misurazioni ed elabora il livello dell'acqua.
+Il \texttt{CommunicationTask}, assegnato al core 1, gestisce
+la connessione Wi-Fi e MQTT e la pubblicazione dei risultati.
+Entrambi i task sono configurati con priorità 1.
+
+La Tabella~\ref{tab:tms-tasks} riassume le responsabilità
+dei due task.
+
+\begin{table}[htbp]
+    \centering
+    \begin{tabular}{p{0.30\linewidth} p{0.60\linewidth}}
+        \hline
+        \textbf{Task} & \textbf{Responsabilità principale} \\
+        \hline
+
+        \texttt{WaterLevelTask} &
+        Acquisizione della distanza, calcolo del livello
+        e produzione delle misure. \\
+
+        \texttt{CommunicationTask} &
+        Gestione Wi-Fi e MQTT, pubblicazione delle misure
+        e aggiornamento dei LED. \\
+
+        \hline
+    \end{tabular}
+    \caption{Task principali del firmware TMS.}
+    \label{tab:tms-tasks}
+\end{table}
+
+Lo scambio dei dati avviene tramite una coda FreeRTOS con capacità
+di un elemento di tipo \texttt{WaterLevelData}.
+Il task di misurazione inserisce il risultato più recente,
+sostituendo un'eventuale misura non ancora prelevata;
+il task di comunicazione lo legge quando può procedere
+alla pubblicazione.
+Questa separazione permette di continuare l'acquisizione anche
+durante l'assenza della connessione, senza accumulare una sequenza
+di misure precedenti da trasmettere.
+
+
+\subsection{Circuito e componenti hardware}
+\label{subsec:tms-hardware}
+
+Il prototipo TMS utilizza i seguenti componenti principali:
+
+\begin{itemize}
+    \item una scheda ESP32, per l'esecuzione del firmware
+    e la connessione Wi-Fi;
+
+    \item un sensore a ultrasuoni HC-SR04, per misurare
+    la distanza dalla superficie dell'acqua;
+
+    \item un LED verde e un LED rosso, per segnalare
+    lo stato della comunicazione;
+
+    \item breadboard, cavetti e resistori per la realizzazione
+    dei collegamenti.
+\end{itemize}
+
+La configurazione dei pin è centralizzata nel file
+\texttt{config.h}, così da mantenere separati i collegamenti
+hardware dalla logica dei task.
+La Figura~\ref{fig:tms-wiring} mostra lo schema del cablaggio.
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=\linewidth]{figures/tms_wiring.png}
+    \caption{Schema del cablaggio del sottosistema TMS.}
+    \label{fig:tms-wiring}
+\end{figure}
+
+I collegamenti dei segnali utilizzano:
+
+\begin{itemize}
+    \item GPIO5 per il segnale TRIG del sonar;
+    \item GPIO18 per il segnale ECHO, attraverso
+    un partitore resistivo;
+    \item GPIO25 per il LED verde;
+    \item GPIO26 per il LED rosso.
+\end{itemize}
+
+Il sonar è alimentato dalla linea a \(5\,\mathrm{V}\),
+con massa comune alla scheda ESP32.
+Sul segnale ECHO è presente un partitore formato da
+una resistenza da \(1\,\mathrm{k}\Omega\) tra l'uscita
+del sensore e il nodo collegato a GPIO18, e una resistenza
+da \(2\,\mathrm{k}\Omega\) tra tale nodo e massa.
+Il partitore riduce il livello alto del segnale
+da circa \(5\,\mathrm{V}\) a circa \(3{,}3\,\mathrm{V}\),
+rendendolo compatibile con l'ingresso della scheda.
+
+Ciascun LED è collegato al rispettivo GPIO attraverso
+una resistenza in serie da \(220\,\Omega\), che ne limita
+la corrente; i catodi sono collegati a massa.
+
+
+\subsection{Task del firmware}
+\label{subsec:tms-tasks}
+
+
+\subsubsection{CommunicationTask}
+\label{subsec:tms-communication}
+
+Il \texttt{CommunicationTask} gestisce la connessione alla rete
+Wi-Fi e al broker MQTT e la pubblicazione delle misure acquisite
+dal TMS.
+La logica di controllo è realizzata mediante una macchina
+a stati finiti, che distingue le fasi di connessione dalla
+condizione di comunicazione operativa.
+
+Gli stati principali sono:
+
+\begin{itemize}
+    \item \texttt{WIFI\_CONNECTING}: attesa della connessione
+    alla rete Wi-Fi configurata;
+
+    \item \texttt{MQTT\_CONNECTING}: tentativi di connessione
+    al broker MQTT, rispettando l'intervallo di ritentativo
+    configurato;
+
+    \item \texttt{WAITING\_FIRST\_PUBLISH}: connessione MQTT
+    stabilita, in attesa della prima pubblicazione riuscita;
+
+    \item \texttt{COMMUNICATION\_OK}: almeno una pubblicazione
+    è riuscita dopo la connessione MQTT corrente;
+    il task continua a gestire la connessione e a pubblicare
+    le nuove misure disponibili.
+\end{itemize}
+
+La Figura~\ref{fig:tms-communication-fsm} mostra
+la macchina a stati del task di comunicazione.
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[
+        width=\linewidth,
+        height=0.75\textheight,
+        keepaspectratio
+    ]{figures/communication_fsm.png}
+    \caption{FSM del CommunicationTask.}
+    \label{fig:tms-communication-fsm}
+\end{figure}
+
+Negli stati \texttt{WAITING\_FIRST\_PUBLISH} e
+\texttt{COMMUNICATION\_OK}, il task esegue le stesse operazioni
+di gestione della connessione e pubblicazione.
+Richiama regolarmente \texttt{mqttClient.loop()} per mantenere
+la comunicazione MQTT e, quando trova una misura nella coda,
+la preleva e ne tenta la pubblicazione sul topic configurato.
+Il primo esito positivo determina il passaggio a
+\texttt{COMMUNICATION\_OK}; le pubblicazioni successive
+proseguono nello stesso stato.
+
+Il LED rosso rimane acceso durante la connessione Wi-Fi,
+la connessione MQTT e l'attesa della prima pubblicazione riuscita.
+In \texttt{COMMUNICATION\_OK} viene spento il rosso e acceso
+il verde.
+Quando viene rilevata una perdita della connessione,
+il passaggio allo stato di riconnessione spegne il LED verde
+e riaccende il LED rosso.
+Il verde viene riacceso soltanto dopo una nuova pubblicazione
+riuscita.
+I LED rappresentano quindi lo stato della comunicazione,
+indipendentemente dalla validità della misura: anche l'esito
+di una lettura senza eco può essere pubblicato correttamente.
+
+La perdita della connessione Wi-Fi determina il ritorno a
+\texttt{WIFI\_CONNECTING}.
+Se il Wi-Fi è disponibile ma la connessione MQTT risulta
+interrotta, oppure fallisce la gestione del client o una
+pubblicazione, il task passa a \texttt{MQTT\_CONNECTING}.
+Il ritorno a questo stato abilita un nuovo tentativo immediato;
+in caso di ulteriori fallimenti, i tentativi rispettano
+l'intervallo di ritentativo configurato.
+
+% DA COMPLETARE:
+% - breve descrizione dei dati trasmessi;
+% - esempio del messaggio MQTT effettivamente utilizzato.
+
+
+\subsubsection{WaterLevelTask}
+\label{subsec:tms-water-level}
+
+% DA COMPLETARE:
+% - acquisizione periodica della distanza;
+% - calcolo del livello e della percentuale;
+% - gestione dell'assenza di eco e limiti del livello;
+% - inserimento del risultato nella coda.
+
+
+\subsection{Scelte progettuali e gestione degli errori}
+\label{subsec:tms-design-choices}
+
+% DA COMPLETARE:
+% - motivazioni delle principali scelte progettuali;
+% - gestione degli errori di inizializzazione;
+% - distinzione tra validità della misura e stato della comunicazione.
+% Evitare di ripetere le descrizioni operative dei task.
+
+
+\subsection{Test, criticità e taratura}
+\label{subsec:tms-tests}
+
+% DA COMPLETARE:
+% - prove effettivamente svolte e risultati osservati;
+% - criticità riscontrate durante le prove;
+% - misure e parametri adattati al prototipo reale.
