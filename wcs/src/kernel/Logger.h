@@ -4,9 +4,12 @@
 #include <Arduino.h>
 
 /**
- * @brief Optional debug logger for serial messages.
+ * @brief Provides optional debug logging through the serial interface.
  *
- * Logs use the LOG prefix and are sent only when debug logging is enabled.
+ * Debug messages use the "LOG," prefix and are sent through MsgService.
+ * Logging can be enabled or disabled in config.h.
+ *
+ * This service can be used to monitor system behavior during development.
  */
 class LoggerService {
 

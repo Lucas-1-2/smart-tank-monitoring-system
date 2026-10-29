@@ -7,7 +7,8 @@
 
 #define SERIAL_BAUD_RATE           115200UL
 #define SERIAL_MAX_MESSAGE_LENGTH  48
-// #define ENABLE_DEBUG_LOGS          1   // uncomment to enable LOG,... messages
+// Enable optional debug messages (0 = disabled, 1 = enabled).
+#define ENABLE_DEBUG_LOGS 0
 
 
 // =====================================================

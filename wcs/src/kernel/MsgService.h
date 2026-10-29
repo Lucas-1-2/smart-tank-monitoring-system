@@ -28,8 +28,12 @@ public:
     void poll();
 
     /**
-     * @brief Checks if a complete message is waiting to be read.
-     * @return true if a complete message is available.
+     * @brief Checks if a complete message is available.
+     *
+     * The message is not removed from the buffer.
+     * Call poll() to process incoming serial data.
+     *
+     * @return true if a complete message is ready, false otherwise.
      */
     bool isMsgAvailable() const;
 
