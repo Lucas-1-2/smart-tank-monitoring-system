@@ -1,39 +1,39 @@
-package it.unibo.cus.core;
+package it.unibo.cus.core.impl;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import org.junit.jupiter.api.Test;
 
-class AutomaticPolicyTest {
+class AutomaticPolicyImplTest {
 
     @Test
     void lowLevelClosesValveImmediately() {
-        final AutomaticPolicy policy = new AutomaticPolicy(40, 70, 1000);
+        final AutomaticPolicyImpl policy = new AutomaticPolicyImpl(40, 70, 1000);
         assertEquals(0, policy.onMeasurement(40, 80, 0));
-        assertEquals(AutomaticPolicy.State.LOW, policy.getState());
+        assertEquals(AutomaticPolicyImpl.State.LOW, policy.getState());
     }
 
     @Test
     void highLevelOpensValveImmediately() {
-        final AutomaticPolicy policy = new AutomaticPolicy(40, 70, 1000);
+        final AutomaticPolicyImpl policy = new AutomaticPolicyImpl(40, 70, 1000);
         assertEquals(100, policy.onMeasurement(70, 0, 0));
-        assertEquals(AutomaticPolicy.State.HIGH, policy.getState());
+        assertEquals(AutomaticPolicyImpl.State.HIGH, policy.getState());
     }
 
     @Test
     void midLevelKeepsPreviousOpeningUntilT1() {
-        final AutomaticPolicy policy = new AutomaticPolicy(40, 70, 1000);
+        final AutomaticPolicyImpl policy = new AutomaticPolicyImpl(40, 70, 1000);
 
         assertEquals(100, policy.onMeasurement(80, 0, 0));
         assertEquals(100, policy.onMeasurement(60, 100, 100));
         assertEquals(100, policy.onTick(100, 1099));
         assertEquals(50, policy.onTick(100, 1100));
-        assertEquals(AutomaticPolicy.State.MID_ACTIVE, policy.getState());
+        assertEquals(AutomaticPolicyImpl.State.MID_ACTIVE, policy.getState());
     }
 
     @Test
     void leavingMidRangeResetsTheTimer() {
-        final AutomaticPolicy policy = new AutomaticPolicy(40, 70, 1000);
+        final AutomaticPolicyImpl policy = new AutomaticPolicyImpl(40, 70, 1000);
 
         assertEquals(30, policy.onMeasurement(60, 30, 0));
         assertEquals(0, policy.onMeasurement(30, 30, 500));
@@ -44,22 +44,22 @@ class AutomaticPolicyTest {
 
     @Test
     void midLevelActivatesAfterT1OnMeasurement() {
-        final AutomaticPolicy policy = new AutomaticPolicy(40, 70, 1000);
+        final AutomaticPolicyImpl policy = new AutomaticPolicyImpl(40, 70, 1000);
 
         assertEquals(80, policy.onMeasurement(60, 80, 0));
         assertEquals(50, policy.onMeasurement(60, 80, 1000));
-        assertEquals(AutomaticPolicy.State.MID_ACTIVE, policy.getState());
+        assertEquals(AutomaticPolicyImpl.State.MID_ACTIVE, policy.getState());
     }
 
     @Test
     void resetRestartsMidTimer() {
-        final AutomaticPolicy policy = new AutomaticPolicy(40, 70, 1000);
+        final AutomaticPolicyImpl policy = new AutomaticPolicyImpl(40, 70, 1000);
 
         assertEquals(80, policy.onMeasurement(60, 80, 0));
 
         policy.reset();
 
-        assertEquals(AutomaticPolicy.State.UNKNOWN, policy.getState());
+        assertEquals(AutomaticPolicyImpl.State.UNKNOWN, policy.getState());
 
         assertEquals(80, policy.onMeasurement(60, 80, 2000));
         assertEquals(80, policy.onTick(80, 2999));

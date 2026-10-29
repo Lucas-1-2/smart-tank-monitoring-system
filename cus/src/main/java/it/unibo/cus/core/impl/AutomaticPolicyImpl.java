@@ -1,4 +1,4 @@
-package it.unibo.cus.core;
+package it.unibo.cus.core.impl;
 
 /**
  * Finite-state implementation of the AUTOMATIC valve policy.
@@ -8,7 +8,7 @@ package it.unibo.cus.core;
  * MID_ACTIVE:   L1 < x < L2 for at least T1 -> valve 50%
  * HIGH:         x >= L2 -> valve 100%
  */
-public final class AutomaticPolicy {
+public final class AutomaticPolicyImpl {
 
     public enum State {
         UNKNOWN,
@@ -25,7 +25,7 @@ public final class AutomaticPolicy {
     private State state;
     private long midSince;
 
-    public AutomaticPolicy(final double l1, final double l2, final long t1Ms) {
+    public AutomaticPolicyImpl(final double l1, final double l2, final long t1Ms) {
         if (
             !Double.isFinite(l1) ||
             !Double.isFinite(l2) || 

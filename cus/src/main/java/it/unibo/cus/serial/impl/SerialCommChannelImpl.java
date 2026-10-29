@@ -1,4 +1,4 @@
-package it.unibo.cus.serial;
+package it.unibo.cus.serial.impl;
 
 import com.fazecast.jSerialComm.SerialPort;
 import com.fazecast.jSerialComm.SerialPortDataListener;
@@ -12,7 +12,7 @@ import java.util.concurrent.BlockingQueue;
  * Line-based serial communication channel.
  * Adapted from the Smart Hangar DRU implementation.
  */
-public final class SerialCommChannel {
+public final class SerialCommChannelImpl {
 
     private static final int MESSAGE_QUEUE_CAPACITY = 100;
 
@@ -20,7 +20,7 @@ public final class SerialCommChannel {
     private final BlockingQueue<String> queue;
     private final StringBuilder currentMsg;
 
-    public SerialCommChannel(final String port, final int rate) throws Exception {
+    public SerialCommChannelImpl(final String port, final int rate) throws Exception {
         queue = new ArrayBlockingQueue<>(MESSAGE_QUEUE_CAPACITY);
         currentMsg = new StringBuilder();
 

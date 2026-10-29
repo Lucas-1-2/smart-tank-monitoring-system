@@ -1,8 +1,8 @@
-package it.unibo.cus.http;
+package it.unibo.cus.http.impl;
 
 import it.unibo.cus.Config;
 import it.unibo.cus.core.CommandResult;
-import it.unibo.cus.core.SystemController;
+import it.unibo.cus.core.impl.SystemControllerImpl;
 import it.unibo.cus.model.Measurement;
 import it.unibo.cus.model.OperatingMode;
 import it.unibo.cus.model.SystemSnapshot;
@@ -27,11 +27,11 @@ import java.util.Locale;
 import java.util.Objects;
 
 /** HTTP REST API and static DBS server, based on Vert.x Web. */
-public final class HttpService extends AbstractVerticle {
+public final class HttpServiceImpl extends AbstractVerticle {
 
-    private final SystemController controller;
+    private final SystemControllerImpl controller;
 
-    public HttpService(final SystemController controller) {
+    public HttpServiceImpl(final SystemControllerImpl controller) {
         this.controller = Objects.requireNonNull(controller, "controller");
     }
 

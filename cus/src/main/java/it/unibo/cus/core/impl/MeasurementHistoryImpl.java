@@ -1,4 +1,4 @@
-package it.unibo.cus.core;
+package it.unibo.cus.core.impl;
 
 import it.unibo.cus.model.Measurement;
 import java.util.ArrayDeque;
@@ -6,12 +6,12 @@ import java.util.Deque;
 import java.util.List;
 
 /** Fixed-size in-memory history of the latest TMS measurements. */
-public final class MeasurementHistory {
+public final class MeasurementHistoryImpl {
 
     private final int maxSize;
     private final Deque<Measurement> measurements;
 
-    public MeasurementHistory(final int maxSize) {
+    public MeasurementHistoryImpl(final int maxSize) {
         if (maxSize <= 0) {
             throw new IllegalArgumentException("maxSize must be > 0");
         }

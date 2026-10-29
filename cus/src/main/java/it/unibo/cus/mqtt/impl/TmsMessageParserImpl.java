@@ -1,6 +1,7 @@
-package it.unibo.cus.mqtt;
+package it.unibo.cus.mqtt.impl;
 
 import io.vertx.core.json.JsonObject;
+import it.unibo.cus.mqtt.api.TmsMessageParser;
 
 /**
  * Parser for the MQTT payload produced by the Tank Monitoring Subsystem.
@@ -14,7 +15,7 @@ import io.vertx.core.json.JsonObject;
  * The CUS works with the percentage value only. NO_ECHO is normalized to null;
  * the controller stores it in the measurement history but does not reset T2.
  */
-public final class DefaultTmsMessageParser implements TmsMessageParser {
+public final class TmsMessageParserImpl implements TmsMessageParser {
 
     private static final String STATUS_OK = "OK";
     private static final String STATUS_NO_ECHO = "NO_ECHO";

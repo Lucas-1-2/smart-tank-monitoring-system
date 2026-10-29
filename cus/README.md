@@ -8,23 +8,23 @@ Java 17 backend for **Assignment 03 – Smart Tank Monitoring System**. The CUS 
  TMS (ESP / MQTT)                         DBS (browser)
           |                                    |
           v                                    v
-   TmsMqttService                        HttpService
+   TmsMqttServiceImpl                        HttpServiceImpl
           |                                    |
           +---------------+--------------------+
                           |
                           v
-                   SystemController <------ Vert.x periodic timer
+                   SystemControllerImpl <------ Vert.x periodic timer
                   (authoritative state)
                           ^
                           |
-                    WcsSerialAgent <----> SerialCommChannel <----> WCS (Arduino)
+                    WcsSerialAgentImpl <----> SerialCommChannelImpl <----> WCS (Arduino)
                     receiver/writer          USB serial
 
- SystemController -- coalesced update signal --> WcsSerialAgent
- WcsSerialAgent -- read current snapshot -----> SystemController
+ SystemControllerImpl -- coalesced update signal --> WcsSerialAgentImpl
+ WcsSerialAgentImpl -- read current snapshot -----> SystemControllerImpl
 ```
 
-`SystemController` owns the global state. MQTT callbacks, HTTP handlers, the serial receiver and the periodic timer use the same controller instance. State operations are protected by an internal lock; network and serial I/O take place outside that lock.
+`SystemControllerImpl` owns the global state. MQTT callbacks, HTTP handlers, the serial receiver and the periodic timer use the same controller instance. State operations are protected by an internal lock; network and serial I/O take place outside that lock.
 
 **Technologies:** Java 17, Maven, Vert.x Core/Web 4.2.6, Eclipse Paho MQTT v3 1.2.5, jSerialComm 2.10.4 and JUnit 5.
 
@@ -232,7 +232,7 @@ STATE,MANUAL,65
 STATE,UNCONNECTED,5
 ```
 
-`READY` asks for synchronization with the current CUS state. The serial receiver passes requests to `SystemController`; Arduino does not authoritatively set the mode or valve opening. Rejected and no-op requests cause a state refresh to be requested.
+`READY` asks for synchronization with the current CUS state. The serial receiver passes requests to `SystemControllerImpl`; Arduino does not authoritatively set the mode or valve opening. Rejected and no-op requests cause a state refresh to be requested.
 
 **Latest-state synchronization:** instead of queueing every previous state, the controller keeps at most **one pending update signal** in an `ArrayBlockingQueue<Boolean>(1)`. Multiple pending updates are coalesced. On a signal, the serial writer reads a **fresh snapshot** and sends one `STATE,...` line. This prevents a growing FIFO of outdated snapshots and does not affect measurement history. It also means there is **no guarantee of one distinct STATE response for every rapidly issued command**, nor of delivery/acknowledgment of every intermediate state transition. Serial write errors are logged; automatic serial reconnection is not implemented.
 
@@ -250,10 +250,10 @@ cus/
 │   │   ├── Config.java
 │   │   ├── RunCus.java
 │   │   ├── core/
-│   │   │   ├── AutomaticPolicy.java
+│   │   │   ├── AutomaticPolicyImpl.java
 │   │   │   ├── CommandResult.java
-│   │   │   ├── MeasurementHistory.java
-│   │   │   └── SystemController.java
+│   │   │   ├── MeasurementHistoryImpl.java
+│   │   │   └── SystemControllerImpl.java
 │   │   ├── model/
 │   │   │   ├── Measurement.java
 │   │   │   ├── OperatingMode.java
@@ -261,20 +261,20 @@ cus/
 │   │   │   └── SystemSnapshot.java
 │   │   ├── mqtt/
 │   │   │   ├── TmsMessageParser.java
-│   │   │   ├── DefaultTmsMessageParser.java
-│   │   │   └── TmsMqttService.java
+│   │   │   ├── TmsMessageParserImpl.java
+│   │   │   └── TmsMqttServiceImpl.java
 │   │   ├── serial/
-│   │   │   ├── SerialCommChannel.java
+│   │   │   ├── SerialCommChannelImpl.java
 │   │   │   ├── SerialPortSelector.java
-│   │   │   └── WcsSerialAgent.java
+│   │   │   └── WcsSerialAgentImpl.java
 │   │   └── http/
-│   │       └── HttpService.java
+│   │       └── HttpServiceImpl.java
 │   └── test/java/it/unibo/cus/
 │       ├── core/
-│       │   ├── AutomaticPolicyTest.java
-│       │   └── SystemControllerTest.java
+│       │   ├── AutomaticPolicyImplTest.java
+│       │   └── SystemControllerImplTest.java
 │       └── mqtt/
-│           └── DefaultTmsMessageParserTest.java
+│           └── TmsMessageParserImplTest.java
 └── target/                       # generated build output; Git-ignored
 ```
 

@@ -1,6 +1,7 @@
-package it.unibo.cus.core;
+package it.unibo.cus.core.impl;
 
 import it.unibo.cus.Config;
+import it.unibo.cus.core.CommandResult;
 import it.unibo.cus.model.Measurement;
 import it.unibo.cus.model.OperatingMode;
 import it.unibo.cus.model.PublicState;
@@ -17,11 +18,11 @@ import java.util.concurrent.ArrayBlockingQueue;
  * All MQTT, HTTP, serial and timer events enter through this class.
  * No I/O is performed while the internal lock is held.
  */
-public final class SystemController {
+public final class SystemControllerImpl {
 
     private final Object lock;
-    private final AutomaticPolicy automaticPolicy;
-    private final MeasurementHistory measurementHistory;
+    private final AutomaticPolicyImpl automaticPolicy;
+    private final MeasurementHistoryImpl measurementHistory;
     private final BlockingQueue<Boolean> wcsUpdateSignals;
 
     private OperatingMode mode;
@@ -30,14 +31,14 @@ public final class SystemController {
     private int valveOpening;
     private long lastValidMeasurementTime;
 
-    public SystemController() {
+    public SystemControllerImpl() {
         this(System.currentTimeMillis());
     }
 
-    SystemController(final long bootTime) {
+    SystemControllerImpl(final long bootTime) {
         lock = new Object();
-        automaticPolicy = new AutomaticPolicy(Config.L1, Config.L2, Config.T1_MS);
-        measurementHistory = new MeasurementHistory(Config.HISTORY_SIZE);
+        automaticPolicy = new AutomaticPolicyImpl(Config.L1, Config.L2, Config.T1_MS);
+        measurementHistory = new MeasurementHistoryImpl(Config.HISTORY_SIZE);
         wcsUpdateSignals = new ArrayBlockingQueue<>(1);
 
         mode = OperatingMode.AUTOMATIC;

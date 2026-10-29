@@ -1,4 +1,4 @@
-package it.unibo.cus.core;
+package it.unibo.cus.core.impl;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -6,18 +6,19 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import it.unibo.cus.Config;
+import it.unibo.cus.core.CommandResult;
 import it.unibo.cus.model.OperatingMode;
 import it.unibo.cus.model.PublicState;
 import it.unibo.cus.model.SystemSnapshot;
 
 import org.junit.jupiter.api.Test;
 
-class SystemControllerTest {
+class SystemControllerImplTest {
 
     @Test
     void startsAutomaticAndBecomesUnconnectedAfterT2WithoutValidSamples() {
         final long boot = 1_000L;
-        final SystemController controller = new SystemController(boot);
+        final SystemControllerImpl controller = new SystemControllerImpl(boot);
 
         assertEquals(PublicState.AUTOMATIC, controller.getSnapshot().state());
         assertEquals(0, controller.getSnapshot().valveOpening());
@@ -32,7 +33,7 @@ class SystemControllerTest {
     @Test
     void nullSampleIsStoredButDoesNotResetT2() {
         final long boot = 10_000L;
-        final SystemController controller = new SystemController(boot);
+        final SystemControllerImpl controller = new SystemControllerImpl(boot);
 
         controller.onMeasurement(null, boot + Config.T2_MS / 2);
         assertEquals(1, controller.getMeasurementsSnapshot().size());
@@ -45,7 +46,7 @@ class SystemControllerTest {
     @Test
     void validSampleRecoversToAutomaticImmediately() {
         final long boot = 20_000L;
-        final SystemController controller = new SystemController(boot);
+        final SystemControllerImpl controller = new SystemControllerImpl(boot);
 
         controller.tick(boot + Config.T2_MS);
         assertEquals(PublicState.UNCONNECTED, controller.getSnapshot().state());
@@ -60,7 +61,7 @@ class SystemControllerTest {
     @Test
     void manualCommandsAreRejectedWhenUnconnected() {
         final long boot = 30_000L;
-        final SystemController controller = new SystemController(boot);
+        final SystemControllerImpl controller = new SystemControllerImpl(boot);
         controller.tick(boot + Config.T2_MS);
 
         final CommandResult modeResult = controller.requestMode(OperatingMode.MANUAL);
@@ -74,7 +75,7 @@ class SystemControllerTest {
 
     @Test
     void manualValveRequestWorksOnlyInManualMode() {
-        final SystemController controller = new SystemController(0L);
+        final SystemControllerImpl controller = new SystemControllerImpl(0L);
         controller.onMeasurement(20.0, 1L);
 
         assertFalse(controller.requestValveOpening(70).accepted());
@@ -87,7 +88,7 @@ class SystemControllerTest {
     @Test
     void manualModePreservesValveAndIgnoresAutomaticUpdates() {
         final long now = System.currentTimeMillis();
-        final SystemController controller = new SystemController(now);
+        final SystemControllerImpl controller = new SystemControllerImpl(now);
 
         controller.onMeasurement(90.0, now);
         assertEquals(100, controller.getSnapshot().valveOpening());
@@ -107,7 +108,7 @@ class SystemControllerTest {
     @Test
     void recoveryFromManualAlwaysReturnsToAutomatic() {
         final long boot = 1_000L;
-        final SystemController controller = new SystemController(boot);
+        final SystemControllerImpl controller = new SystemControllerImpl(boot);
 
         controller.onMeasurement(20.0, boot + 1);
         controller.requestMode(OperatingMode.MANUAL);
@@ -127,7 +128,7 @@ class SystemControllerTest {
     @Test
     void validMeasurementRestartsT2() {
         final long boot = 1_000L;
-        final SystemController controller = new SystemController(boot);
+        final SystemControllerImpl controller = new SystemControllerImpl(boot);
         final long sampleTime = boot + Config.T2_MS / 2;
 
         controller.onMeasurement(30.0, sampleTime);
@@ -142,7 +143,7 @@ class SystemControllerTest {
     @Test
     void nullMeasurementResetsAutomaticPolicyTimer() {
         final long boot = 1_000L;
-        final SystemController controller = new SystemController(boot);
+        final SystemControllerImpl controller = new SystemControllerImpl(boot);
 
         controller.onMeasurement(80.0, boot);
         controller.onMeasurement(60.0, boot + 100);
@@ -162,7 +163,7 @@ class SystemControllerTest {
         throws InterruptedException {
 
         final long boot = 1_000L;
-        final SystemController controller = new SystemController(boot);
+        final SystemControllerImpl controller = new SystemControllerImpl(boot);
 
         // First valid measurement: AUTOMATIC, valve 100%.
         controller.onMeasurement(90.0, boot + 1);

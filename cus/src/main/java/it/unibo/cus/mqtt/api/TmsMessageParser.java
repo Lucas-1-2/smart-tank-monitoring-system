@@ -1,4 +1,4 @@
-package it.unibo.cus.mqtt;
+package it.unibo.cus.mqtt.api;
 
 /**
  * Converts one TMS MQTT payload into a water-level percentage.

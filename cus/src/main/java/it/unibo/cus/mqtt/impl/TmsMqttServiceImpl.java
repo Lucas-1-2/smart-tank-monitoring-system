@@ -1,7 +1,8 @@
-package it.unibo.cus.mqtt;
+package it.unibo.cus.mqtt.impl;
 
 import it.unibo.cus.Config;
-import it.unibo.cus.core.SystemController;
+import it.unibo.cus.core.impl.SystemControllerImpl;
+import it.unibo.cus.mqtt.api.TmsMessageParser;
 
 import org.eclipse.paho.client.mqttv3.IMqttDeliveryToken;
 import org.eclipse.paho.client.mqttv3.MqttCallbackExtended;
@@ -14,9 +15,9 @@ import java.nio.charset.StandardCharsets;
 import java.util.Objects;
 
 /** MQTT subscriber that receives TMS water-level samples through Eclipse Paho. */
-public final class TmsMqttService implements AutoCloseable {
+public final class TmsMqttServiceImpl implements AutoCloseable {
 
-    private final SystemController controller;
+    private final SystemControllerImpl controller;
     private final TmsMessageParser parser;
 
     private volatile boolean running;
@@ -24,8 +25,8 @@ public final class TmsMqttService implements AutoCloseable {
     private Thread connectionThread;
     private MqttClient client;
 
-    public TmsMqttService(
-        final SystemController controller,
+    public TmsMqttServiceImpl(
+        final SystemControllerImpl controller,
         final TmsMessageParser parser
     ) {
         this.controller = Objects.requireNonNull(controller, "controller");

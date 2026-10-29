@@ -1,7 +1,7 @@
-package it.unibo.cus.serial;
+package it.unibo.cus.serial.impl;
 
 import it.unibo.cus.core.CommandResult;
-import it.unibo.cus.core.SystemController;
+import it.unibo.cus.core.impl.SystemControllerImpl;
 import it.unibo.cus.model.OperatingMode;
 import it.unibo.cus.model.SystemSnapshot;
 
@@ -9,22 +9,22 @@ import java.util.Locale;
 import java.util.Objects;
 
 /**
- * Bridges the WCS line protocol and the thread-safe SystemController.
+ * Bridges the WCS line protocol and the thread-safe SystemControllerImpl.
  * Receiving and sending are kept on separate threads.
  */
-public final class WcsSerialAgent implements AutoCloseable {
+public final class WcsSerialAgentImpl implements AutoCloseable {
 
-    private final SerialCommChannel channel;
-    private final SystemController controller;
+    private final SerialCommChannelImpl channel;
+    private final SystemControllerImpl controller;
 
     private volatile boolean running;
     private boolean closed;
     private Thread receiverThread;
     private Thread writerThread;
 
-    public WcsSerialAgent(
-        final SerialCommChannel channel,
-        final SystemController controller
+    public WcsSerialAgentImpl(
+        final SerialCommChannelImpl channel,
+        final SystemControllerImpl controller
     ) {
         this.channel = Objects.requireNonNull(channel, "channel");
         this.controller = Objects.requireNonNull(controller, "controller");
