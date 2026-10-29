@@ -2,6 +2,9 @@ package it.unibo.cus.core.impl;
 
 import it.unibo.cus.Config;
 import it.unibo.cus.core.CommandResult;
+import it.unibo.cus.core.api.AutomaticPolicy;
+import it.unibo.cus.core.api.MeasurementHistory;
+import it.unibo.cus.core.api.SystemController;
 import it.unibo.cus.model.Measurement;
 import it.unibo.cus.model.OperatingMode;
 import it.unibo.cus.model.PublicState;
@@ -18,11 +21,11 @@ import java.util.concurrent.ArrayBlockingQueue;
  * All MQTT, HTTP, serial and timer events enter through this class.
  * No I/O is performed while the internal lock is held.
  */
-public final class SystemControllerImpl {
+public final class SystemControllerImpl implements SystemController {
 
     private final Object lock;
-    private final AutomaticPolicyImpl automaticPolicy;
-    private final MeasurementHistoryImpl measurementHistory;
+    private final AutomaticPolicy automaticPolicy;
+    private final MeasurementHistory measurementHistory;
     private final BlockingQueue<Boolean> wcsUpdateSignals;
 
     private OperatingMode mode;
@@ -31,10 +34,16 @@ public final class SystemControllerImpl {
     private int valveOpening;
     private long lastValidMeasurementTime;
 
+    /** Creates the controller with the current system time as boot time. */
     public SystemControllerImpl() {
         this(System.currentTimeMillis());
     }
 
+    /**
+     * Creates a controller with a fixed boot time for internal tests.
+     *
+     * @param bootTime the start time in milliseconds
+     */
     SystemControllerImpl(final long bootTime) {
         lock = new Object();
         automaticPolicy = new AutomaticPolicyImpl(Config.L1, Config.L2, Config.T1_MS);
@@ -48,10 +57,7 @@ public final class SystemControllerImpl {
         lastValidMeasurementTime = bootTime;
     }
 
-    /**
-     * Processes one TMS sample. A null value is stored but does not reset T2.
-     * Invalid samples also break MID continuity because the level is unknown.
-     */
+    @Override
     public void onMeasurement(final Double value, final long now) {
         synchronized (lock) {
             final PublicState oldState = publicStateLocked();
@@ -90,14 +96,12 @@ public final class SystemControllerImpl {
         }
     }
 
-    /** Convenience overload using the current system time. */
+    @Override
     public void onMeasurement(final Double value) {
         onMeasurement(value, System.currentTimeMillis());
     }
 
-    /**
-     * Periodic controller tick used for T1 and T2.
-     */
+    @Override
     public void tick(final long now) {
         synchronized (lock) {
             final PublicState oldState = publicStateLocked();
@@ -120,12 +124,12 @@ public final class SystemControllerImpl {
         }
     }
 
-    /** Convenience overload using the current system time. */
+    @Override
     public void tick() {
         tick(System.currentTimeMillis());
     }
 
-    /** Requests a user-selectable operating mode. */
+    @Override
     public CommandResult requestMode(final OperatingMode requestedMode) {
         Objects.requireNonNull(requestedMode, "requestedMode");
 
@@ -171,7 +175,7 @@ public final class SystemControllerImpl {
         }
     }
 
-    /** Requests a manual valve opening. */
+    @Override
     public CommandResult requestValveOpening(final int requestedOpening) {
         if (requestedOpening < 0 || requestedOpening > 100) {
             throw new IllegalArgumentException("Valve opening must be in [0,100]");
@@ -216,25 +220,26 @@ public final class SystemControllerImpl {
         }
     }
 
-    /** Returns an immutable snapshot of the global state. */
+    @Override
     public SystemSnapshot getSnapshot() {
         synchronized (lock) {
             return snapshotLocked();
         }
     }
 
-    /** Returns an independent oldest-to-newest history snapshot. */
+    @Override
     public List<Measurement> getMeasurementsSnapshot() {
         synchronized (lock) {
             return measurementHistory.snapshot();
         }
     }
 
+    @Override
     public void requestWcsStateUpdate() {
         wcsUpdateSignals.offer(Boolean.TRUE);
     }
 
-    /** Waits for an update request, then reads the latest controller state. */
+    @Override
     public SystemSnapshot takeWcsStateUpdate() throws InterruptedException {
         wcsUpdateSignals.take();
         return getSnapshot();

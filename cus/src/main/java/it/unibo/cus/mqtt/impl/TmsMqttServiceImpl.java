@@ -1,8 +1,9 @@
 package it.unibo.cus.mqtt.impl;
 
 import it.unibo.cus.Config;
-import it.unibo.cus.core.impl.SystemControllerImpl;
+import it.unibo.cus.core.api.SystemController;
 import it.unibo.cus.mqtt.api.TmsMessageParser;
+import it.unibo.cus.mqtt.api.TmsMqttService;
 
 import org.eclipse.paho.client.mqttv3.IMqttDeliveryToken;
 import org.eclipse.paho.client.mqttv3.MqttCallbackExtended;
@@ -15,9 +16,9 @@ import java.nio.charset.StandardCharsets;
 import java.util.Objects;
 
 /** MQTT subscriber that receives TMS water-level samples through Eclipse Paho. */
-public final class TmsMqttServiceImpl implements AutoCloseable {
+public final class TmsMqttServiceImpl implements TmsMqttService {
 
-    private final SystemControllerImpl controller;
+    private final SystemController controller;
     private final TmsMessageParser parser;
 
     private volatile boolean running;
@@ -25,14 +26,21 @@ public final class TmsMqttServiceImpl implements AutoCloseable {
     private Thread connectionThread;
     private MqttClient client;
 
+    /**
+     * Creates the MQTT service with the shared controller and parser.
+     *
+     * @param controller the controller that receives parsed measurements
+     * @param parser the parser for TMS messages
+     */
     public TmsMqttServiceImpl(
-        final SystemControllerImpl controller,
+        final SystemController controller,
         final TmsMessageParser parser
     ) {
         this.controller = Objects.requireNonNull(controller, "controller");
         this.parser = Objects.requireNonNull(parser, "parser");
     }
 
+    @Override
     public synchronized void start() {
         if (closed) {
             throw new IllegalStateException("MQTT service has already been closed");

@@ -26,6 +26,19 @@ Java 17 backend for **Assignment 03 – Smart Tank Monitoring System**. The CUS 
 
 `SystemControllerImpl` owns the global state. MQTT callbacks, HTTP handlers, the serial receiver and the periodic timer use the same controller instance. State operations are protected by an internal lock; network and serial I/O take place outside that lock.
 
+### Code organization
+
+Each main component has an interface under `api/` and a concrete class under `impl/`.
+Other components depend on the interfaces, while `RunCus` creates the implementations and connects them.
+The interfaces describe what each component does. The implementation classes contain the details.
+
+- `core`: `SystemController` manages the shared state, `AutomaticPolicy` handles T1 and the valve rules, and `MeasurementHistory` stores recent samples.
+- `mqtt`: `TmsMqttService` receives TMS messages and `TmsMessageParser` reads their data.
+- `serial`: `SerialCommChannel` handles serial lines, while `WcsSerialAgent` handles WCS commands and state updates.
+- `http`: `HttpService` provides the REST routes and serves the DBS.
+
+Configuration, records, enums, the application entry point and the static serial-port selector remain concrete types without extra interfaces.
+
 **Technologies:** Java 17, Maven, Vert.x Core/Web 4.2.6, Eclipse Paho MQTT v3 1.2.5, jSerialComm 2.10.4 and JUnit 5.
 
 ## Getting started
@@ -244,36 +257,50 @@ cus/
 ├── README.md
 ├── .gitignore
 ├── src/
-│   ├── cus.properties.example      # example in the supplied ZIP
-│   ├── cus.properties              # local copy also present in the supplied ZIP
+│   ├── cus.properties.example
 │   ├── main/java/it/unibo/cus/
 │   │   ├── Config.java
 │   │   ├── RunCus.java
 │   │   ├── core/
-│   │   │   ├── AutomaticPolicyImpl.java
 │   │   │   ├── CommandResult.java
-│   │   │   ├── MeasurementHistoryImpl.java
-│   │   │   └── SystemControllerImpl.java
+│   │   │   ├── api/
+│   │   │   │   ├── AutomaticPolicy.java
+│   │   │   │   ├── MeasurementHistory.java
+│   │   │   │   └── SystemController.java
+│   │   │   └── impl/
+│   │   │       ├── AutomaticPolicyImpl.java
+│   │   │       ├── MeasurementHistoryImpl.java
+│   │   │       └── SystemControllerImpl.java
 │   │   ├── model/
 │   │   │   ├── Measurement.java
 │   │   │   ├── OperatingMode.java
 │   │   │   ├── PublicState.java
 │   │   │   └── SystemSnapshot.java
 │   │   ├── mqtt/
-│   │   │   ├── TmsMessageParser.java
-│   │   │   ├── TmsMessageParserImpl.java
-│   │   │   └── TmsMqttServiceImpl.java
+│   │   │   ├── api/
+│   │   │   │   ├── TmsMessageParser.java
+│   │   │   │   └── TmsMqttService.java
+│   │   │   └── impl/
+│   │   │       ├── TmsMessageParserImpl.java
+│   │   │       └── TmsMqttServiceImpl.java
 │   │   ├── serial/
-│   │   │   ├── SerialCommChannelImpl.java
 │   │   │   ├── SerialPortSelector.java
-│   │   │   └── WcsSerialAgentImpl.java
+│   │   │   ├── api/
+│   │   │   │   ├── SerialCommChannel.java
+│   │   │   │   └── WcsSerialAgent.java
+│   │   │   └── impl/
+│   │   │       ├── SerialCommChannelImpl.java
+│   │   │       └── WcsSerialAgentImpl.java
 │   │   └── http/
-│   │       └── HttpServiceImpl.java
+│   │       ├── api/
+│   │       │   └── HttpService.java
+│   │       └── impl/
+│   │           └── HttpServiceImpl.java
 │   └── test/java/it/unibo/cus/
-│       ├── core/
+│       ├── core/impl/
 │       │   ├── AutomaticPolicyImplTest.java
 │       │   └── SystemControllerImplTest.java
-│       └── mqtt/
+│       └── mqtt/impl/
 │           └── TmsMessageParserImplTest.java
 └── target/                       # generated build output; Git-ignored
 ```

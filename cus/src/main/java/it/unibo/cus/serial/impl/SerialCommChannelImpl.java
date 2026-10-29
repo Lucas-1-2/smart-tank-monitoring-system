@@ -3,6 +3,7 @@ package it.unibo.cus.serial.impl;
 import com.fazecast.jSerialComm.SerialPort;
 import com.fazecast.jSerialComm.SerialPortDataListener;
 import com.fazecast.jSerialComm.SerialPortEvent;
+import it.unibo.cus.serial.api.SerialCommChannel;
 
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.ArrayBlockingQueue;
@@ -12,7 +13,7 @@ import java.util.concurrent.BlockingQueue;
  * Line-based serial communication channel.
  * Adapted from the Smart Hangar DRU implementation.
  */
-public final class SerialCommChannelImpl {
+public final class SerialCommChannelImpl implements SerialCommChannel {
 
     private static final int MESSAGE_QUEUE_CAPACITY = 100;
 
@@ -20,6 +21,13 @@ public final class SerialCommChannelImpl {
     private final BlockingQueue<String> queue;
     private final StringBuilder currentMsg;
 
+    /**
+     * Opens a serial port and starts reading incoming lines.
+     *
+     * @param port the serial port name
+     * @param rate the serial baud rate
+     * @throws Exception if the serial port cannot be opened
+     */
     public SerialCommChannelImpl(final String port, final int rate) throws Exception {
         queue = new ArrayBlockingQueue<>(MESSAGE_QUEUE_CAPACITY);
         currentMsg = new StringBuilder();
@@ -81,7 +89,7 @@ public final class SerialCommChannelImpl {
         }
     }
 
-    /** Sends one newline-terminated message atomically. */
+    @Override
     public void sendMsg(final String message) {
         final byte[] bytes = (message + "\n").getBytes(StandardCharsets.US_ASCII);
 
@@ -97,11 +105,12 @@ public final class SerialCommChannelImpl {
         }
     }
 
-    /** Waits for the next complete line. */
+    @Override
     public String receiveMsg() throws InterruptedException {
         return queue.take();
     }
 
+    @Override
     public void close() {
         serialPort.removeDataListener();
         serialPort.closePort();

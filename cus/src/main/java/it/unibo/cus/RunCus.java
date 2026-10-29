@@ -1,9 +1,14 @@
 package it.unibo.cus;
 
+import it.unibo.cus.core.api.SystemController;
 import it.unibo.cus.core.impl.SystemControllerImpl;
+import it.unibo.cus.http.api.HttpService;
 import it.unibo.cus.http.impl.HttpServiceImpl;
+import it.unibo.cus.mqtt.api.TmsMqttService;
 import it.unibo.cus.mqtt.impl.TmsMessageParserImpl;
 import it.unibo.cus.mqtt.impl.TmsMqttServiceImpl;
+import it.unibo.cus.serial.api.SerialCommChannel;
+import it.unibo.cus.serial.api.WcsSerialAgent;
 import it.unibo.cus.serial.impl.SerialCommChannelImpl;
 import it.unibo.cus.serial.SerialPortSelector;
 import it.unibo.cus.serial.impl.WcsSerialAgentImpl;
@@ -28,11 +33,11 @@ public final class RunCus {
 
         printConfiguration();
 
-        final SystemControllerImpl controller = new SystemControllerImpl();
+        final SystemController controller = new SystemControllerImpl();
         final Vertx vertx = Vertx.vertx();
 
-        final AtomicReference<WcsSerialAgentImpl> serialAgentRef = new AtomicReference<>();
-        final AtomicReference<TmsMqttServiceImpl> mqttServiceRef = new AtomicReference<>();
+        final AtomicReference<WcsSerialAgent> serialAgentRef = new AtomicReference<>();
+        final AtomicReference<TmsMqttService> mqttServiceRef = new AtomicReference<>();
 
         registerShutdownHook(vertx, serialAgentRef, mqttServiceRef);
         startHttpService(vertx, controller);
@@ -43,7 +48,7 @@ public final class RunCus {
         );
 
         if (Config.MQTT_ENABLED) {
-            final TmsMqttServiceImpl mqttService = new TmsMqttServiceImpl(
+            final TmsMqttService mqttService = new TmsMqttServiceImpl(
                 controller,
                 new TmsMessageParserImpl()
             );
@@ -58,9 +63,10 @@ public final class RunCus {
 
     private static void startHttpService(
         final Vertx vertx,
-        final SystemControllerImpl controller
+        final SystemController controller
     ) {
-        vertx.deployVerticle(new HttpServiceImpl(controller), result -> {
+        final HttpService httpService = new HttpServiceImpl(controller);
+        vertx.deployVerticle(httpService, result -> {
             if (result.failed()) {
                 System.err.println(
                     "[CUS] Cannot start HTTP service: " + result.cause().getMessage()
@@ -70,20 +76,20 @@ public final class RunCus {
     }
 
     private static void startSerialService(
-        final SystemControllerImpl controller,
-        final AtomicReference<WcsSerialAgentImpl> serialAgentRef
+        final SystemController controller,
+        final AtomicReference<WcsSerialAgent> serialAgentRef
     ) {
         try {
             final String portName = Config.SERIAL_PORT != null
                 ? Config.SERIAL_PORT
                 : SerialPortSelector.selectPort();
 
-            final SerialCommChannelImpl channel = new SerialCommChannelImpl(
+            final SerialCommChannel channel = new SerialCommChannelImpl(
                 portName,
                 Config.SERIAL_BAUD_RATE
             );
 
-            final WcsSerialAgentImpl serialAgent = new WcsSerialAgentImpl(channel, controller);
+            final WcsSerialAgent serialAgent = new WcsSerialAgentImpl(channel, controller);
             serialAgentRef.set(serialAgent);
 
             try {
@@ -116,18 +122,18 @@ public final class RunCus {
 
     private static void registerShutdownHook(
         final Vertx vertx,
-        final AtomicReference<WcsSerialAgentImpl> serialAgentRef,
-        final AtomicReference<TmsMqttServiceImpl> mqttServiceRef
+        final AtomicReference<WcsSerialAgent> serialAgentRef,
+        final AtomicReference<TmsMqttService> mqttServiceRef
     ) {
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             System.out.println("[CUS] Shutting down...");
 
-            final WcsSerialAgentImpl serialAgent = serialAgentRef.get();
+            final WcsSerialAgent serialAgent = serialAgentRef.get();
             if (serialAgent != null) {
                 serialAgent.close();
             }
 
-            final TmsMqttServiceImpl mqttService = mqttServiceRef.get();
+            final TmsMqttService mqttService = mqttServiceRef.get();
             if (mqttService != null) {
                 mqttService.close();
             }

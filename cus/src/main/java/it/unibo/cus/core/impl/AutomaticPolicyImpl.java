@@ -1,5 +1,7 @@
 package it.unibo.cus.core.impl;
 
+import it.unibo.cus.core.api.AutomaticPolicy;
+
 /**
  * Finite-state implementation of the AUTOMATIC valve policy.
  *
@@ -8,15 +10,7 @@ package it.unibo.cus.core.impl;
  * MID_ACTIVE:   L1 < x < L2 for at least T1 -> valve 50%
  * HIGH:         x >= L2 -> valve 100%
  */
-public final class AutomaticPolicyImpl {
-
-    public enum State {
-        UNKNOWN,
-        LOW,
-        MID_WAITING,
-        MID_ACTIVE,
-        HIGH
-    }
+public final class AutomaticPolicyImpl implements AutomaticPolicy {
 
     private final double l1;
     private final double l2;
@@ -25,6 +19,14 @@ public final class AutomaticPolicyImpl {
     private State state;
     private long midSince;
 
+    /**
+     * Creates a policy with the two water-level limits and the T1 delay.
+     *
+     * @param l1 the lower water-level threshold
+     * @param l2 the upper water-level threshold
+     * @param t1Ms the middle-range waiting time in milliseconds
+     * @throws IllegalArgumentException if the thresholds or T1 are invalid
+     */
     public AutomaticPolicyImpl(final double l1, final double l2, final long t1Ms) {
         if (
             !Double.isFinite(l1) ||
@@ -45,19 +47,13 @@ public final class AutomaticPolicyImpl {
         reset();
     }
 
-    /** Resets temporal knowledge without changing the valve directly. */
+    @Override
     public void reset() {
         state = State.UNKNOWN;
         midSince = -1L;
     }
 
-    /**
-     * Processes a valid water-level measurement.
-     * @param level valid water-level percentage
-     * @param currentValve current valve opening
-     * @param now current time in milliseconds
-     * @return valve opening required by the policy
-     */
+    @Override
     public int onMeasurement(
         final double level,
         final int currentValve,
@@ -94,10 +90,7 @@ public final class AutomaticPolicyImpl {
         return state == State.MID_ACTIVE ? 50 : currentValve;
     }
 
-    /**
-     * Handles time progression while no new valid measurement is needed.
-     * Only MID_WAITING can produce a transition on time alone.
-     */
+    @Override
     public int onTick(final int currentValve, final long now) {
         validateValve(currentValve);
 
@@ -109,6 +102,7 @@ public final class AutomaticPolicyImpl {
         return currentValve;
     }
 
+    @Override
     public State getState() {
         return state;
     }

@@ -1,35 +1,44 @@
 package it.unibo.cus.serial.impl;
 
 import it.unibo.cus.core.CommandResult;
-import it.unibo.cus.core.impl.SystemControllerImpl;
+import it.unibo.cus.core.api.SystemController;
 import it.unibo.cus.model.OperatingMode;
 import it.unibo.cus.model.SystemSnapshot;
+import it.unibo.cus.serial.api.SerialCommChannel;
+import it.unibo.cus.serial.api.WcsSerialAgent;
 
 import java.util.Locale;
 import java.util.Objects;
 
 /**
- * Bridges the WCS line protocol and the thread-safe SystemControllerImpl.
+ * Bridges the WCS line protocol and the thread-safe controller.
  * Receiving and sending are kept on separate threads.
  */
-public final class WcsSerialAgentImpl implements AutoCloseable {
+public final class WcsSerialAgentImpl implements WcsSerialAgent {
 
-    private final SerialCommChannelImpl channel;
-    private final SystemControllerImpl controller;
+    private final SerialCommChannel channel;
+    private final SystemController controller;
 
     private volatile boolean running;
     private boolean closed;
     private Thread receiverThread;
     private Thread writerThread;
 
+    /**
+     * Creates the agent with a serial channel and the shared controller.
+     *
+     * @param channel the serial connection to the WCS
+     * @param controller the controller used to handle commands
+     */
     public WcsSerialAgentImpl(
-        final SerialCommChannelImpl channel,
-        final SystemControllerImpl controller
+        final SerialCommChannel channel,
+        final SystemController controller
     ) {
         this.channel = Objects.requireNonNull(channel, "channel");
         this.controller = Objects.requireNonNull(controller, "controller");
     }
 
+    @Override
     public synchronized void start() {
         if (closed) {
             throw new IllegalStateException(
