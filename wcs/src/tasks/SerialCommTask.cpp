@@ -27,6 +27,7 @@ void SerialCommTask::processMessage(const String& message) {
     SystemMode mode;
     int valveOpening;
 
+    // Only valid CUS state messages can change the shared context.
     if (parseStateMessage(message, mode, valveOpening)) {
         context->setSystemState(mode, valveOpening);
     }

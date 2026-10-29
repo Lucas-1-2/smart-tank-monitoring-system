@@ -20,10 +20,8 @@ void PotentiometerTask::tick() {
     switch (state) {
         case DISABLED:
             if (manualMode) {
-                /*
-                 * Entering MANUAL does not command the physical potentiometer
-                 * value. Its current position becomes the local baseline.
-                 */
+                // Ignore the current position when MANUAL first becomes active.
+                // Only later movement can send a valve request.
                 referencePercentage = readPercentage();
                 state = ACTIVE;
             }

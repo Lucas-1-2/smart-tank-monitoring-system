@@ -4,38 +4,45 @@
 #include <Arduino.h>
 
 /**
- * @brief Non-blocking serial transport service.
+ * @brief Sends and receives newline-terminated serial messages.
+ *
+ * Incoming characters are read without blocking. The service stores one
+ * complete message at a time and discards lines that are too long.
  */
 class MsgService {
 
 public:
+    /**
+     * @brief Creates the serial message service.
+     */
     MsgService();
 
     /**
-     * @brief Initializes the serial communication.
+     * @brief Starts serial communication and resets the input buffers.
      */
     void init();
 
     /**
-     * @brief Reads the currently available serial characters.
+     * @brief Reads available bytes until a full message is ready.
      */
     void poll();
 
     /**
-     * @brief Returns whether a complete message is available.
+     * @brief Checks if a complete message is waiting to be read.
+     * @return true if a complete message is available.
      */
     bool isMsgAvailable() const;
 
     /**
-     * @brief Retrieves the pending message.
-     * @param message Destination string.
+     * @brief Gets and clears the pending message.
+     * @param message Destination for the received text.
      * @return true if a message was retrieved, false otherwise.
      */
     bool receiveMsg(String& message);
 
     /**
-     * @brief Sends a newline-terminated message.
-     * @param message Message to send.
+     * @brief Sends one message followed by a newline.
+     * @param message Message text without the final newline.
      */
     void sendMsg(const String& message);
 
@@ -47,6 +54,7 @@ private:
     bool discardingMessage;
 };
 
+/** Shared serial message service used by the tasks. */
 extern MsgService msgService;
 
 #endif

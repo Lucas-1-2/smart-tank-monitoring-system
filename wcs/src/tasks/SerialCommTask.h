@@ -6,20 +6,22 @@
 #include "model/Context.h"
 
 /**
- * @brief Receives authoritative state updates from the CUS.
+ * @brief Receives system state messages from the CUS.
+ *
+ * This task sends READY once, reads complete serial messages and checks
+ * their format before updating Context. Invalid messages are ignored.
  */
 class SerialCommTask : public Task {
 
 public:
     /**
-     * @brief Creates a serial communication task.
-     *
-     * @param context Pointer to the shared system context.
+     * @brief Creates the serial communication task.
+     * @param context Shared WCS state to update.
      */
     SerialCommTask(Context* context);
 
     /**
-     * @brief Handles incoming serial messages from the CUS.
+     * @brief Sends READY once and processes available serial messages.
      */
     void tick();
 
@@ -28,37 +30,33 @@ private:
     bool readySent;
 
     /**
-     * @brief Processes a received serial message and updates the system state if valid.
-     *
-     * @param message The received serial message.
+     * @brief Updates the context only if the message is a valid STATE.
+     * @param message Received serial message.
      */
     void processMessage(const String& message);
 
     /**
-     * @brief Parses a state message received from the CUS.
-     *
-     * @param message The message to parse.
-     * @param mode Reference where the parsed system mode is stored.
-     * @param valveOpening Reference where the parsed valve opening percentage is stored.
-     * @return true if the message is valid, false otherwise.
+     * @brief Parses a STATE,MODE,PERCENT message.
+     * @param message Received message to check.
+     * @param mode Destination for the parsed mode.
+     * @param valveOpening Destination for the parsed valve opening.
+     * @return true if all fields are valid, false otherwise.
      */
     bool parseStateMessage(const String& message, SystemMode& mode, int& valveOpening);
 
     /**
-     * @brief Parses a system mode from its textual representation.
-     *
-     * @param value The string containing the system mode.
-     * @param mode Reference where the parsed mode is stored.
-     * @return true if the mode is valid, false otherwise.
+     * @brief Converts a protocol mode name to a SystemMode value.
+     * @param value Mode text from the message.
+     * @param mode Destination for the parsed mode.
+     * @return true for a known mode, false otherwise.
      */
     bool parseMode(const String& value, SystemMode& mode);
 
     /**
-     * @brief Parses and validates a valve opening percentage.
-     *
-     * @param value The string containing the percentage value.
-     * @param percentage Reference where the parsed percentage is stored.
-     * @return true if the percentage is valid, false otherwise.
+     * @brief Checks that a percentage contains only digits and is in range.
+     * @param value Percentage text from the message.
+     * @param percentage Destination for the parsed percentage.
+     * @return true for a value from 0 to 100, false otherwise.
      */
     bool parsePercentage(const String& value, int& percentage);
 };

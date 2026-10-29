@@ -2,25 +2,25 @@
 #define __POTENTIOMETER__
 
 /**
- * @brief Analog potentiometer device.
+ * @brief Reads and stores the position of an analog potentiometer.
  */
 class Potentiometer {
 
 public:
     /**
-     * @brief Creates a potentiometer connected to the specified analog pin.
+     * @brief Creates a potentiometer connected to an analog pin.
      * @param pin Analog input pin.
      */
     Potentiometer(int pin);
 
     /**
-     * @brief Samples the physical potentiometer.
+     * @brief Reads the analog input and updates the stored value.
      */
     void sync();
 
     /**
-     * @brief Returns the last sampled normalized value.
-     * @return Value in the range 0.0 .. 1.0.
+     * @brief Gets the most recent sampled value.
+     * @return Normalized value from 0.0 to 1.0.
      */
     float getValue();
 

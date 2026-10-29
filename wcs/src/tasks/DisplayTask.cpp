@@ -31,6 +31,7 @@ void DisplayTask::tick() {
 }
 
 void DisplayTask::updateDisplay(SystemMode mode, int valveOpening) {
+    // Keep room for the final null character in both LCD row buffers.
     char modeRow[LCD_COLUMNS + 1];
     char valveRow[LCD_COLUMNS + 1];
 

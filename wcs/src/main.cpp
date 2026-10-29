@@ -17,6 +17,11 @@ Scheduler sched;
 HWPlatform* pHWPlatform;
 Context* pContext;
 
+/**
+ * @brief Initializes the WCS hardware and its periodic tasks.
+ *
+ * In hardware test mode, the normal tasks are not started.
+ */
 void setup() {
     msgService.init();
     sched.init(SCHEDULER_PERIOD_MS);
@@ -53,6 +58,9 @@ void setup() {
 #endif
 }
 
+/**
+ * @brief Runs one scheduler cycle in normal mode.
+ */
 void loop() {
 #ifndef __TEST_HW__
     sched.schedule();

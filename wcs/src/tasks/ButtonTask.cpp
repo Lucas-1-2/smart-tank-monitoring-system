@@ -38,8 +38,5 @@ void ButtonTask::sendModeChangeRequest() {
     } else if (mode == MANUAL) {
         msgService.sendMsg(F("CMD,MODE,AUTOMATIC"));
     }
-    /*
-     * In UNCONNECTED mode the request is intentionally ignored.
-     * The PRESSED state still consumes the current physical press.
-     */
+    // In UNCONNECTED the press is consumed but no request is sent.
 }

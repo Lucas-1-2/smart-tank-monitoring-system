@@ -2,7 +2,7 @@
 #define __CONTEXT__
 
 /**
- * @brief Global operating mode established by the CUS.
+ * @brief Operating modes reported by the Central Unit Subsystem (CUS).
  */
 enum SystemMode {
     AUTOMATIC,
@@ -11,42 +11,48 @@ enum SystemMode {
 };
 
 /**
- * @brief Returns the text representation of a system mode.
+ * @brief Gets the protocol name of a system mode.
  * @param mode Mode to convert.
- * @return Text representation of the mode.
+ * @return Text used to identify the mode.
  */
 const char* toString(SystemMode mode);
 
 /**
- * @brief Shared WCS view of the authoritative state received from the CUS.
+ * @brief Stores the latest system state received from the CUS.
  *
- * Local input tasks never modify this state. It is updated only when a valid
- * STATE message is received from the CUS.
+ * The CUS controls the global state. Local input tasks only send requests.
+ * SerialCommTask updates this context after a valid STATE message.
  */
 class Context {
 
 public:
+    /**
+     * @brief Creates an empty state with no CUS update yet.
+     */
     Context();
 
     /**
-     * @brief Returns whether at least one valid state has been received.
+     * @brief Checks whether the CUS has sent a valid state.
+     * @return true after the first valid STATE message.
      */
     bool isStateAvailable();
 
     /**
-     * @brief Returns the last confirmed system mode.
+     * @brief Gets the last confirmed operating mode.
+     * @return Operating mode reported by the CUS.
      */
     SystemMode getMode();
 
     /**
-     * @brief Returns the last confirmed valve opening percentage.
+     * @brief Gets the last confirmed valve opening.
+     * @return Valve opening from 0 to 100 percent.
      */
     int getValveOpening();
 
     /**
-     * @brief Atomically updates the WCS view of the global state.
-     * @param mode Confirmed mode received from CUS.
-     * @param valveOpening Confirmed valve opening, 0..100 percent.
+     * @brief Stores a mode and valve opening received from the CUS.
+     * @param mode Confirmed operating mode.
+     * @param valveOpening Confirmed opening from 0 to 100 percent.
      */
     void setSystemState(SystemMode mode, int valveOpening);
 
