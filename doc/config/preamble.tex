@@ -1,1 +1,74 @@
+% -------------------------------------------------
+% Lingua e caratteri
+% -------------------------------------------------
+\usepackage[T1]{fontenc}
+\usepackage[italian]{babel}
+\usepackage{lmodern}
+\usepackage{microtype}
+
+% -------------------------------------------------
+% Impaginazione
+% -------------------------------------------------
+\usepackage[
+    a4paper,
+    top=2cm,
+    bottom=2cm,
+    left=2.2cm,
+    right=2.2cm
+]{geometry}
+
+\linespread{1.2}
+\setlength{\parindent}{1.2em}
+\setlength{\parskip}{0pt}
+\raggedbottom
+
+% -------------------------------------------------
+% Immagini e pagine orizzontali
+% -------------------------------------------------
 \usepackage{graphicx}
+\usepackage{pdflscape}
+\usepackage{float}
+
+% -------------------------------------------------
+% Tabelle e didascalie
+% -------------------------------------------------
+\usepackage{tabularx}
+\usepackage{booktabs}
+\renewcommand{\arraystretch}{1.2}
+
+\usepackage[
+    font=small,
+    labelfont=bf
+]{caption}
+
+% -------------------------------------------------
+% Elenchi
+% -------------------------------------------------
+\usepackage{enumitem}
+
+\setlist[itemize]{
+    topsep=5pt,
+    itemsep=3pt,
+    parsep=0pt,
+    partopsep=0pt
+}
+
+% -------------------------------------------------
+% Collegamenti nel PDF
+% -------------------------------------------------
+\usepackage{xcolor}
+\definecolor{MaterialBlue}{HTML}{0843D8}
+
+\usepackage{hyperref}
+
+\hypersetup{
+    colorlinks=true,
+    linkcolor=MaterialBlue,
+    urlcolor=MaterialBlue,
+    citecolor=MaterialBlue
+}
+
+% -------------------------------------------------
+% Comandi comuni
+% -------------------------------------------------
+\newcommand{\code}[1]{\texttt{#1}}

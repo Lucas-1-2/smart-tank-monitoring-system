@@ -1,13 +1,26 @@
-\documentclass[a4paper,9pt]{extarticle}
+\documentclass[12pt,a4paper]{article}
 
 \input{config/preamble}
 
 \begin{document}
+
+% Frontespizio
 \pagestyle{empty}
-
 \input{sections/00_header}
-\input{sections/01_introduction}
-\input{sections/02_tms}
+\clearpage
 
+% Indice e numerazione
+\pagestyle{plain}
+\pagenumbering{arabic}
+
+\tableofcontents
+\clearpage
+
+% Introduzione generale
+\input{sections/01_introduction}
+\clearpage
+
+% Tank Monitoring Subsystem
+\input{sections/02_tms}
 
 \end{document}

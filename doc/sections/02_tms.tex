@@ -19,23 +19,29 @@ Entrambi i task sono configurati con priorità 1.
 La Tabella~\ref{tab:tms-tasks} riassume le responsabilità
 dei due task.
 
-\begin{table}[htbp]
+\begin{table}[H]
     \centering
-    \begin{tabular}{p{0.30\linewidth} p{0.60\linewidth}}
-        \hline
-        \textbf{Task} & \textbf{Responsabilità principale} \\
-        \hline
+
+    \begin{tabularx}{\linewidth}{
+        @{}l >{\raggedright\arraybackslash}X@{}
+    }
+        \toprule
+        \textbf{Task} &
+        \textbf{Responsabilità principale} \\
+        \midrule
 
         \texttt{WaterLevelTask} &
-        Acquisizione della distanza, calcolo del livello
-        e produzione delle misure. \\
+        Acquisizione della distanza, verifica della validità
+        e calcolo del livello di riempimento. \\
 
         \texttt{CommunicationTask} &
-        Gestione Wi-Fi e MQTT, pubblicazione delle misure
-        e aggiornamento dei LED. \\
+        Gestione delle connessioni Wi-Fi e MQTT,
+        pubblicazione delle misure e aggiornamento
+        dei LED di stato. \\
 
-        \hline
-    \end{tabular}
+        \bottomrule
+    \end{tabularx}
+
     \caption{Task principali del firmware TMS.}
     \label{tab:tms-tasks}
 \end{table}
@@ -75,22 +81,46 @@ La configurazione dei pin è centralizzata nel file
 hardware dalla logica dei task.
 La Figura~\ref{fig:tms-wiring} mostra lo schema del cablaggio.
 
-\begin{figure}[htbp]
+\begin{figure}[H]
     \centering
-    \includegraphics[width=\linewidth]{figures/tms_wiring.png}
-    \caption{Schema del cablaggio del sottosistema TMS.}
+
+    \includegraphics[
+        width=0.96\linewidth
+    ]{figures/tms_wiring.png}
+
+    \caption{Cablaggio del TMS: ESP32, sonar HC-SR04
+    e LED di stato.}
     \label{fig:tms-wiring}
 \end{figure}
 
-I collegamenti dei segnali utilizzano:
+La Tabella~\ref{tab:tms-pins} riassume
+i collegamenti dei segnali.
 
-\begin{itemize}
-    \item GPIO5 per il segnale TRIG del sonar;
-    \item GPIO18 per il segnale ECHO, attraverso
-    un partitore resistivo;
-    \item GPIO25 per il LED verde;
-    \item GPIO26 per il LED rosso.
-\end{itemize}
+\begin{table}[H]
+    \centering
+
+    \begin{tabularx}{\linewidth}{
+        @{}l >{\raggedright\arraybackslash}X@{}
+    }
+        \toprule
+        \textbf{GPIO} & \textbf{Collegamento} \\
+        \midrule
+
+        5  & Segnale TRIG del sonar HC-SR04. \\
+
+        18 & Segnale ECHO del sonar HC-SR04,
+             attraverso il partitore resistivo. \\
+
+        25 & LED verde di stato della comunicazione. \\
+
+        26 & LED rosso di stato della comunicazione. \\
+
+        \bottomrule
+    \end{tabularx}
+
+    \caption{Assegnazione dei GPIO del TMS.}
+    \label{tab:tms-pins}
+\end{table}
 
 Il sonar è alimentato dalla linea a \(5\,\mathrm{V}\),
 con massa comune alla scheda ESP32.
@@ -143,16 +173,20 @@ Gli stati principali sono:
 La Figura~\ref{fig:tms-communication-fsm} mostra
 la macchina a stati del task di comunicazione.
 
-\begin{figure}[htbp]
-    \centering
-    \includegraphics[
-        width=\linewidth,
-        height=0.75\textheight,
-        keepaspectratio
-    ]{figures/communication_fsm.png}
-    \caption{FSM del CommunicationTask.}
-    \label{fig:tms-communication-fsm}
-\end{figure}
+\begin{landscape}
+    \begin{figure}[p]
+        \centering
+
+        \includegraphics[
+            width=\linewidth,
+            height=0.90\textheight,
+            keepaspectratio
+        ]{figures/communication_fsm.png}
+
+        \caption{FSM del CommunicationTask.}
+        \label{fig:tms-communication-fsm}
+    \end{figure}
+\end{landscape}
 
 Negli stati \texttt{WAITING\_FIRST\_PUBLISH} e
 \texttt{COMMUNICATION\_OK}, il task esegue le stesse operazioni
@@ -333,6 +367,7 @@ gli eventuali task già creati rimangono attivi.
 
 \subsection{Test, criticità e taratura}
 \label{subsec:tms-tests}
+\paragraph{Allestimento e verifica delle misure.}
 
 Le prove del TMS sono state effettuate utilizzando una
 scatolina in polimero di forma geometrica regolare come
@@ -358,6 +393,8 @@ Con un'altezza utile di \(0{,}30\,\mathrm{m}\),
 un livello di \(0{,}15\,\mathrm{m}\) corrisponde
 a un riempimento del \(50\%\).
 
+\paragraph{Gestione delle letture non valide.}
+
 Durante le prove preliminari con la mano come bersaglio
 sono state osservate letture non valide, segnalate come
 \texttt{NO\_ECHO}.
@@ -376,6 +413,8 @@ sul CUS, che ha riconosciuto la segnalazione e restituito
 Il comportamento osservato distingue quindi una misura
 non utilizzabile da una misura valida con livello
 pari a zero.
+
+\paragraph{Avvio e recupero della comunicazione.}
 
 È stata verificata la segnalazione luminosa durante
 l'avvio del TMS e dopo un riavvio manuale mediante
