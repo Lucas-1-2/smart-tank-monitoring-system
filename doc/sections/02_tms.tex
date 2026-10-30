@@ -186,35 +186,213 @@ Il ritorno a questo stato abilita un nuovo tentativo immediato;
 in caso di ulteriori fallimenti, i tentativi rispettano
 l'intervallo di ritentativo configurato.
 
-% DA COMPLETARE:
-% - breve descrizione dei dati trasmessi;
-% - esempio del messaggio MQTT effettivamente utilizzato.
+Le misure vengono pubblicate in formato JSON sul topic
+definito dalla costante \texttt{MQTT\_DATA\_TOPIC}
+nel file \texttt{config.h}.
+Il CUS riceve i messaggi sottoscrivendo lo stesso topic.
+
+Per una misura valida, il messaggio contiene lo stato
+\texttt{OK}, il livello dell'acqua espresso in metri
+nel campo \texttt{levelM} e la percentuale di riempimento
+nel campo \texttt{percentage}.
+Ad esempio, considerando l'altezza utile del prototipo
+di \(0{,}30\,\mathrm{m}\), un livello di
+\(0{,}15\,\mathrm{m}\) corrisponde a un riempimento
+del \(50\%\) e produce:
+
+\begin{verbatim}
+{"status":"OK","levelM":0.150,"percentage":50.0}
+\end{verbatim}
+
+Per una lettura non valida, il messaggio contiene
+soltanto l'indicazione di stato:
+
+\begin{verbatim}
+{"status":"NO_ECHO"}
+\end{verbatim}
+
+In questo caso, i campi numerici del livello e della
+percentuale sono assenti.
+Il CUS può quindi distinguere una lettura non valida
+da una misura valida con riempimento pari allo \(0\%\).
+La segnalazione viene pubblicata sullo stesso topic
+utilizzato per le misure valide.
 
 
 \subsubsection{WaterLevelTask}
 \label{subsec:tms-water-level}
 
-% DA COMPLETARE:
-% - acquisizione periodica della distanza;
-% - calcolo del livello e della percentuale;
-% - gestione dell'assenza di eco e limiti del livello;
-% - inserimento del risultato nella coda.
+Il \texttt{WaterLevelTask} acquisisce la distanza dalla superficie
+dell'acqua attraverso il sonar e calcola il livello di riempimento
+della tanica.
+Il periodo di acquisizione è definito nel file \texttt{config.h}
+e impostato a \(2000\,\mathrm{ms}\), corrispondenti a una frequenza
+di campionamento di \(0{,}5\,\mathrm{Hz}\).
+
+Nel modello adottato, il sensore è collocato in corrispondenza
+del piano che rappresenta il riempimento al \(100\%\).
+Indicando con \(H\) la distanza tra il sensore e il fondo
+della tanica e con \(d\) la distanza misurata dalla superficie
+dell'acqua, il livello viene calcolato come:
+
+\[
+    h = H - d
+\]
+
+La percentuale di riempimento è quindi ottenuta mediante:
+
+\[
+    p = \frac{h}{H} \cdot 100
+\]
+
+La misura è considerata valida soltanto se la distanza rilevata
+è compresa tra zero e \(H\).
+Per le letture ammesse, il livello calcolato appartiene già
+all'intervallo compreso tra zero e l'altezza della tanica,
+mentre la percentuale risulta compresa tra \(0\%\) e \(100\%\).
+
+Se la distanza è negativa, indicando l'assenza di eco,
+oppure supera l'altezza configurata della tanica, il task
+imposta il campo \texttt{measurementValid} a falso
+e non esegue il calcolo del livello.
+La lettura non valida rimane quindi distinta dalla condizione
+di tanica vuota, che corrisponde invece a una misura valida
+con distanza pari a \(H\).
+
+A ogni acquisizione, il task prepara una struttura
+\texttt{WaterLevelData}, contenente la validità della misura,
+la distanza rilevata, il livello e la percentuale di riempimento.
+La struttura viene inserita nella coda condivisa mediante
+\texttt{xQueueOverwrite()}, sostituendo l'eventuale risultato
+non ancora prelevato dal task di comunicazione.
+Anche le letture non valide vengono inserite nella coda:
+il flag di validità permette al task di comunicazione
+di distinguerle dalle misure utilizzabili.
+
+La periodicità è gestita mediante \texttt{vTaskDelayUntil()},
+che riferisce i risvegli del task a scadenze periodiche,
+anziché aggiungere un intervallo fisso al termine
+di ogni acquisizione.
 
 
 \subsection{Scelte progettuali e gestione degli errori}
 \label{subsec:tms-design-choices}
 
-% DA COMPLETARE:
-% - motivazioni delle principali scelte progettuali;
-% - gestione degli errori di inizializzazione;
-% - distinzione tra validità della misura e stato della comunicazione.
-% Evitare di ripetere le descrizioni operative dei task.
+Le principali scelte progettuali riguardano la continuità
+dell'acquisizione, la gestione delle misure e la configurazione
+del prototipo:
+
+\begin{itemize}
+    \item \textbf{Separazione tra acquisizione e comunicazione.}
+    Le due attività sono affidate a task distinti, così che
+    l'attesa della connessione Wi-Fi o MQTT non interrompa
+    il campionamento del livello dell'acqua.
+
+    \item \textbf{Priorità alla misura più recente.}
+    La coda condivisa contiene un solo elemento e viene
+    aggiornata mediante sovrascrittura.
+    Questa scelta privilegia la disponibilità dello stato
+    corrente della tanica, evitando l'accumulo di misure
+    da trasmettere dopo un'interruzione della connessione.
+
+    \item \textbf{Distinzione tra lettura non valida
+    e tanica vuota.}
+    La validità viene rappresentata esplicitamente
+    nella struttura della misura.
+    Una lettura non utilizzabile viene comunicata mediante
+    lo stato \texttt{NO\_ECHO}, mentre una tanica vuota
+    corrisponde a una misura valida con livello pari a zero.
+
+    \item \textbf{Configurazione centralizzata.}
+    I pin, i parametri di rete, i periodi dei task
+    e l'altezza utile della tanica sono raccolti
+    nel file \texttt{config.h}.
+    Il valore dell'altezza deve corrispondere alla distanza
+    effettiva tra il sensore e il fondo, coerentemente
+    con il modello utilizzato per il calcolo del livello.
+\end{itemize}
+
+Le interruzioni della connessione vengono gestite
+dalla macchina a stati del \texttt{CommunicationTask},
+che effettua nuovi tentativi di connessione senza richiedere
+il riavvio della scheda.
+Il LED rosso segnala la condizione di comunicazione
+non operativa durante il recupero.
+
+Gli errori di inizializzazione vengono invece rilevati
+controllando il risultato della creazione della coda
+e dei task FreeRTOS.
+In caso di fallimento, viene stampato un messaggio diagnostico
+sulla porta seriale e viene sospeso il task Arduino
+che esegue \texttt{setup()}, mediante
+\texttt{vTaskSuspend(nullptr)}.
+La sospensione impedisce di proseguire l'inizializzazione
+con risorse mancanti e riguarda soltanto il task chiamante:
+gli eventuali task già creati rimangono attivi.
 
 
 \subsection{Test, criticità e taratura}
 \label{subsec:tms-tests}
 
-% DA COMPLETARE:
-% - prove effettivamente svolte e risultati osservati;
-% - criticità riscontrate durante le prove;
-% - misure e parametri adattati al prototipo reale.
+Le prove del TMS sono state effettuate utilizzando una
+scatolina in polimero di forma geometrica regolare come
+bersaglio del sonar.
+Variando la distanza tra il sensore e l'oggetto sono stati
+simulati diversi livelli di riempimento della tanica.
+
+L'altezza utile è stata configurata a
+\(0{,}30\,\mathrm{m}\), corrispondenti alla lunghezza
+del righello utilizzato come riferimento.
+La distanza rilevata dal sonar è stata confrontata
+con quella misurata mediante il righello, posizionando
+la scatolina a distanze differenti dal sensore.
+Le letture sono risultate approssimativamente
+corrispondenti alle distanze di riferimento,
+fornendo una verifica qualitativa dell'acquisizione
+nella configurazione utilizzata.
+
+È stata verificata anche la coerenza tra il livello
+espresso in metri e la percentuale di riempimento,
+rispetto all'altezza configurata.
+Con un'altezza utile di \(0{,}30\,\mathrm{m}\),
+un livello di \(0{,}15\,\mathrm{m}\) corrisponde
+a un riempimento del \(50\%\).
+
+Durante le prove preliminari con la mano come bersaglio
+sono state osservate letture non valide, segnalate come
+\texttt{NO\_ECHO}.
+È stato quindi utilizzato un oggetto di forma regolare
+per proseguire le verifiche.
+
+È stata controllata anche la gestione delle distanze
+superiori all'altezza configurata, collocando il bersaglio
+oltre i \(30\,\mathrm{cm}\).
+La lettura è stata correttamente classificata come
+non valida e comunicata mediante lo stato
+\texttt{NO\_ECHO}.
+Per le letture non valide è stata verificata la gestione
+sul CUS, che ha riconosciuto la segnalazione e restituito
+\texttt{null} per la misura non disponibile.
+Il comportamento osservato distingue quindi una misura
+non utilizzabile da una misura valida con livello
+pari a zero.
+
+È stata verificata la segnalazione luminosa durante
+l'avvio del TMS e dopo un riavvio manuale mediante
+il pulsante RESET della scheda.
+In entrambi i casi è stata osservata l'accensione
+iniziale del LED rosso, seguita dal passaggio al verde
+al ripristino della comunicazione.
+Questa sequenza è coerente con la macchina a stati,
+che abilita il verde dopo la prima pubblicazione MQTT
+riuscita.
+
+È stata inoltre verificata la gestione della perdita
+della connessione Wi-Fi durante il funzionamento,
+interrompendo temporaneamente la rete e mantenendo
+la scheda accesa.
+Al ripristino della rete, il TMS ha ristabilito
+automaticamente la comunicazione, tornando alla
+condizione operativa segnalata dal LED verde.
+Il recupero è avvenuto senza richiedere un riavvio
+manuale della scheda.
