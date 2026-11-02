@@ -61,7 +61,7 @@ static_assert(
 // ================= POTENTIOMETER =====================
 // =====================================================
 
-// Minimum physical movement required before a new manual valve request is sent to the CUS.
+// Minimum physical movement for a manual valve request, except when reaching 0% or 100%.
 #define POT_DELTA_PERCENT  5
 
 static_assert(

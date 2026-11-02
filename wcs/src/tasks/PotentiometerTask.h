@@ -10,7 +10,8 @@
  *
  * The task has a DISABLED/ACTIVE FSM. On entry to MANUAL mode, the
  * current position becomes the reference and no request is sent.
- * Later requests need a change of at least POT_DELTA_PERCENT.
+ * Later requests need a change of at least POT_DELTA_PERCENT, or movement
+ * to 0% or 100% that differs from the reference, even below that threshold.
  */
 class PotentiometerTask : public Task {
 

@@ -18,7 +18,7 @@ The CUS is the authoritative owner of the global state. Local WCS inputs only se
 
 - `SerialCommTask`: receives and validates CUS state updates.
 - `ButtonTask`: detects one mode-change request per physical press.
-- `PotentiometerTask`: in MANUAL mode, sends a new valve request when the physical value changes by at least `POT_DELTA_PERCENT`.
+- `PotentiometerTask`: in MANUAL mode, sends a new valve request when the physical value changes by at least `POT_DELTA_PERCENT`, or reaches 0% or 100% with a value different from the reference.
 - `ValveTask`: applies the valve opening confirmed by the CUS.
 - `DisplayTask`: displays the mode and valve opening confirmed by the CUS.
 
@@ -37,7 +37,7 @@ The button is expected to be hardware-debounced through the external RC circuit.
 - `DISABLED`: used while the system is not in MANUAL mode.
 - `ACTIVE`: entered when a CUS state confirms MANUAL mode. On entry, the current physical potentiometer position becomes the reference value without generating a command.
 
-While ACTIVE, a request is sent only when the absolute difference from the local reference is at least `POT_DELTA_PERCENT`.
+While ACTIVE, a request is sent when the absolute difference from the local reference is at least `POT_DELTA_PERCENT`, or when a movement reaches 0% or 100% even with a smaller difference. For example, 96% -> 100% and 3% -> 0% both send a request. After sending, the reference becomes the requested value, so keeping the potentiometer still at an endpoint does not send repeated requests. Entering MANUAL still only captures the initial reference, including at an endpoint.
 
 ## Serial protocol
 

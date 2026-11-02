@@ -35,8 +35,12 @@ void PotentiometerTask::tick() {
 
             int currentPercentage = readPercentage();
             int delta = abs(currentPercentage - referencePercentage);
+            bool reachedEndpoint =
+                currentPercentage == VALVE_MIN_PERCENT ||
+                currentPercentage == VALVE_MAX_PERCENT;
 
-            if (delta >= POT_DELTA_PERCENT) {
+            // Always allow the final movement to 0% or 100%, without repeated requests at rest.
+            if (delta >= POT_DELTA_PERCENT || (reachedEndpoint && delta > 0)) {
                 sendValveRequest(currentPercentage);
                 referencePercentage = currentPercentage;
             }
