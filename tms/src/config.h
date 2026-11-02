@@ -18,7 +18,7 @@
 
 // SONAR
 #define SONAR_TRIG_PIN 5
-#define SONAR_ECHO_PIN 15
+#define SONAR_ECHO_PIN 18
 
 
 // COMMUNICATION STATUS LEDS
@@ -45,7 +45,7 @@
 
 // Distance between the sensor and the tank bottom (m).
 // The sensor plane represents the 100% water level.
-#define TANK_HEIGHT_M 1.00f
+#define TANK_HEIGHT_M 0.30f
 
 
 
@@ -81,7 +81,7 @@
 
 
 // MQTT broker hostname or IP address
-#define MQTT_BROKER "broker.mqtt-dashboard.com"
+#define MQTT_BROKER "broker.mqttdashboard.com"
 
 // MQTT broker TCP port
 #define MQTT_PORT 1883
