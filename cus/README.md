@@ -62,7 +62,7 @@ cus.t1.ms=5000
 cus.t2.ms=10000
 cus.http.host=0.0.0.0
 cus.http.port=8080
-cus.dbs.dir=DBS
+cus.dbs.dir=../DBS
 cus.mqtt.enabled=true
 cus.mqtt.broker=tcp://broker.mqttdashboard.com:1883
 cus.mqtt.topic=smart-tank/sam-lucas/tms/data
@@ -71,7 +71,7 @@ cus.serial.baud=115200
 # cus.serial.port=COM5
 ```
 
-`cus.dbs.dir=DBS` points to `cus/DBS` when you run from `cus/`. If the DBS folder is next to `cus/`, set the path accordingly, for example `cus.dbs.dir=../dbs` (match the real folder name). If no serial port is configured, a dialog asks you to choose one. On a headless machine, set `cus.serial.port` explicitly.
+`cus.dbs.dir=../DBS` points to the repository dashboard folder next to `cus/` when you run from `cus/`. The default and example configuration use this path; preserve the uppercase folder name `DBS`. If no serial port is configured, a dialog asks you to choose one. On a headless machine, set `cus.serial.port` explicitly.
 
 The internal constants are: history size 20, controller tick 100 ms, MQTT QoS 0 and initial MQTT retry delay 5 seconds. `Config.validate()` checks the configuration on startup.
 
@@ -82,9 +82,12 @@ The system starts in `AUTOMATIC`, with valve opening at 0% and no water-level re
 | Condition | Automatic valve opening |
 | --- | --- |
 | Level <= L1 | 0% |
-| L1 < level < L2 for less than T1 | Keep previous opening |
-| L1 < level < L2 for at least T1 | 50% |
-| Level >= L2 | 100% |
+| Level > L2 | Immediately 100%; enter HIGH |
+| Level = L2 while already HIGH | Keep 100%; remain HIGH |
+| L1 < level <= L2 without retained HIGH, for less than T1 | Keep previous opening |
+| L1 < level <= L2 without retained HIGH, for at least T1 | 50% |
+
+Reaching L2 from below does not trigger HIGH. After exceeding L2, HIGH remains active at L2 and ends only below L2. If the level falls into the middle range, T1 starts at that point: the valve keeps 100% during the wait, then changes to 50%. Returning to exactly L2 during that wait does not restart HIGH. Resetting the automatic policy also clears HIGH retention.
 
 The periodic timer can complete T1 without a new reading. A `NO_ECHO` sample resets the T1 wait in `AUTOMATIC` mode.
 

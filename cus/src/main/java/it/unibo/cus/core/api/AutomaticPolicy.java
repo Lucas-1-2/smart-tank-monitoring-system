@@ -10,8 +10,9 @@ package it.unibo.cus.core.api;
  *
  * The policy works as follows:
  * - At or below L1, the valve opening is 0%.
- * - At or above L2, the valve opening is 100%.
- * - Between L1 and L2, the previous opening is kept during T1.
+ * - Above L2, the valve opening is immediately 100% and stays so until below L2.
+ * - At L2, HIGH is retained only if the policy was already HIGH.
+ * - Otherwise, above L1 and at or below L2, the previous opening is kept during T1.
  * - After T1 in the middle range, the opening is 50%.
  */
 public interface AutomaticPolicy {
@@ -22,11 +23,11 @@ public interface AutomaticPolicy {
         UNKNOWN,
         /** The level is at or below L1. */
         LOW,
-        /** The level is between L1 and L2, and T1 has not ended. */
+        /** Above L1 and at or below L2, without retained HIGH; T1 has not ended. */
         MID_WAITING,
-        /** The level is between L1 and L2, and T1 has ended. */
+        /** Above L1 and at or below L2, without retained HIGH; T1 has ended. */
         MID_ACTIVE,
-        /** The level is at or above L2. */
+        /** Entered above L2 and retained until the level falls below L2. */
         HIGH
     }
 

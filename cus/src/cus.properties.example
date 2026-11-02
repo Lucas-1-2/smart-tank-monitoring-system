@@ -7,7 +7,7 @@ cus.t2.ms=10000
 # HTTP / DBS
 cus.http.host=0.0.0.0
 cus.http.port=8080
-cus.dbs.dir=DBS
+cus.dbs.dir=../DBS
 
 # MQTT
 cus.mqtt.enabled=true

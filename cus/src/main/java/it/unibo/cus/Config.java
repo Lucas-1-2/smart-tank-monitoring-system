@@ -20,7 +20,7 @@ public final class Config {
 
     private static final String DEFAULT_HTTP_HOST = "0.0.0.0";
     private static final int DEFAULT_HTTP_PORT = 8080;
-    private static final String DEFAULT_DBS_DIRECTORY = "DBS";
+    private static final String DEFAULT_DBS_DIRECTORY = "../DBS";
 
     private static final boolean DEFAULT_SERIAL_ENABLED = true;
     private static final int DEFAULT_SERIAL_BAUD_RATE = 115_200;

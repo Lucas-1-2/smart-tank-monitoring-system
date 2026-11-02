@@ -6,9 +6,9 @@ import it.unibo.cus.core.api.AutomaticPolicy;
  * Finite-state implementation of the AUTOMATIC valve policy.
  *
  * LOW: {@code x <= L1} - valve 0%
- * MID_WAITING: {@code L1 < x && x < L2} - keep the opening until T1
- * MID_ACTIVE: {@code L1 < x && x < L2} - valve 50%
- * HIGH: {@code x >= L2} - valve 100%
+ * MID_WAITING: {@code L1 < x && x <= L2}, unless HIGH is retained - keep the opening until T1
+ * MID_ACTIVE: {@code L1 < x && x <= L2}, unless HIGH is retained - valve 50%
+ * HIGH: entered at {@code x > L2}, retained until {@code x < L2} - valve 100%
  */
 public final class AutomaticPolicyImpl implements AutomaticPolicy {
 
@@ -70,7 +70,7 @@ public final class AutomaticPolicyImpl implements AutomaticPolicy {
             return 0;
         }
 
-        if (level >= l2) {
+        if (level > l2 || (state == State.HIGH && level >= l2)) {
             state = State.HIGH;
             midSince = -1L;
             return 100;
