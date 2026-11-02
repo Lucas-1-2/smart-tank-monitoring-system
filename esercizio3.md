@@ -28,7 +28,7 @@ WATER CHANNEL SUBSYSTEM: ###WCS###
         -display lcd: 
             .mostra la percentuale di apertura della valvola (gradi del motore in percentuale)
             .mostra lo stato attuale: AUTOMATIC, MANUAL, 
-                UNCONNECTED: riguarda la comunicazine TMS->CUS, se si interrompe decido cosa fare...
+                UNCONNECTED: stato ricevuto dal CUS dopo T2 senza misure valide; valvola comandata al 5%.
         -Logica:
             task based con scheduler
 
@@ -41,19 +41,32 @@ CONTROL UNIT SUBSYSTEM: ###CUS##
         -fornisce i dati raccolti da TMS e WCS a una dashboard in HTTP
     -AVVIO: modalità AUTOMATICA.
         .livello del TMS L<= a L1: valvola WCS allo 0% (chiusa)
-        .livello del TMS L1 < L <= L2 per più di tempo T1: valvola WCS al 50% (semiaperta)
+        .livello del TMS L1 < L <= L2 senza mantenimento dello stato HIGH: conserva l'apertura precedente per T1, poi valvola al 50% (semiaperta)
         .livello del TMS > L2: valvola immediatamente aperta al 100%, rimane così aperta finche il livello non torna < L2
-    -PERDITA OMUNICAZIONE TMS CON MQTT:
-        .il sistema entra nello stato UNCONNECTED. -> invia il messaggio a WCS per lcd.... invia il messaggio alla Dashboard HTTP...
-            #TODO: bisogna decidere cosa far fare nello stato UNCONNECTED E MOTIVARE LA SCELTA...
+        .a L = L2 mantiene HIGH solo se era già attivo; raggiungere L2 dal basso non attiva l'apertura immediata al 100%.
+        .dopo HIGH, scendere nella fascia L1 < L < L2 avvia T1: mantiene il 100% durante l'attesa, poi passa al 50%; tornare esattamente a L2 non riattiva HIGH.
+        .un reset della politica automatica azzera anche il mantenimento di HIGH.
+    -ASSENZA DI MISURE VALIDE DAL TMS (T2):
+        .se non arriva una misura valida per almeno T2 (default 10000 ms), il CUS entra in UNCONNECTED.
+        .il controllo avviene al tick periodico del CUS (default 100 ms); il timeout iniziale parte dall'avvio.
+        .il CUS imposta il livello corrente a null, la valvola al 5% e azzera la politica automatica.
+        .il 5% e' l'apertura minima fissa adottata dal software in assenza di misure valide.
+        .il nuovo stato viene inviato al WCS tramite seriale ed esposto alla dashboard tramite HTTP.
+        .i comandi di cambio modalita' e apertura sono rifiutati, anche se prima il sistema era in MANUAL.
+        .NO_ECHO viene salvato nello storico come null e non rinnova T2; azzera inoltre l'attesa T1 in AUTOMATIC.
+        .i messaggi MQTT malformati vengono scartati: non entrano nello storico e non rinnovano T2.
+        .alla prima misura valida il sistema torna sempre in AUTOMATIC e applica la politica al livello ricevuto.
+        .UNCONNECTED indica assenza di misure valide, quindi include anche NO_ECHO continui con MQTT funzionante.
+        .il collegamento seriale via cavo e' assunto stabile: non sono previsti heartbeat o conferme di attuazione.
     -modalità MANUALE:
         viene controllata localmente nell WCS tramite un potenzionemtro
         controllata da remoto nel CUS tramite dashboard HTTP (Dashboard->CUS->WCS)
-            -si aprono diverse strade per il controllo del motore:
-                motore sincornizza il movimento con il potenziometro: potensiometro veloce -> motore veloce
-                potenziometro sceglie la posizione -> il motore raggiunge la posizione con un suo tempo: si sceglie un tempo che non renda troppo brusca la chiusura o apertura che in un caso realistico, data la pressione dell'acuqa, potrebbe romperlo più facilmente
-                potenziometro a soglia: ci sono 3 soglie 0%, 50%, 100%, tramite queste soglie si seguono le soglie dei gradi del motore:
-                    questo potrebbe essere utile anche per prevenire eventuali letture sballate del potenziometro che rischiano di non far chiudere o aprire del tutto la porta
+            -controllo implementato del potenziometro:
+                all'ingresso in MANUAL la posizione fisica diventa il riferimento, senza inviare comandi.
+                i movimenti successivi inviano richieste al CUS se la differenza dal riferimento è almeno di 5 punti percentuali.
+                raggiungere 0% o 100% invia una richiesta anche con una differenza inferiore, purché il valore sia diverso dal riferimento.
+                dopo l'invio il riferimento viene aggiornato: restare fermi su un estremo non genera richieste ripetute.
+                il servo viene aggiornato soltanto dopo la ricezione dello stato dal CUS; non è implementata una rampa di movimento.
     -Linguaggio:
         si può usare programmazione oggetti java... non è necessaria interfaccia grafica poichè se ne occupa la dashboard
 
@@ -72,7 +85,8 @@ DASHBARD SUBSYSTEM: ###DBS###
     COMANDI:
         pulsante virtuale per passare da MANUAL ad AUTOMATICA
         controllo grafico per reglare l'apertura della valvola quanto il sistema è in MANUAL
-    LINGUAGGIO: html + php + css
+    LINGUAGGI: HTML + CSS + JavaScript (ES modules), con Chart.js per il grafico.
+    COMUNICAZIONE: Fetch API verso le API HTTP/JSON del CUS Java; non viene utilizzato PHP.
 
 Organizzazione Cartelle:
     assignment-03/
@@ -88,12 +102,12 @@ Organizzazione Cartelle:
 
 PUNTI NON SPECIFICATI NELLA CONSEGNA CHE BISOGNA DECIDERE:
     i valori di F, L₁, L₂, T₁, T₂ e N;
-    cosa debba fare esattamente la valvola nello stato UNCONNECTED; ->secondo me dovrebbe rimanere aperta la valolva
+    gestione UNCONNECTED definita nel software: valvola al 5%, comandi rifiutati, ripristino in AUTOMATIC alla prima misura valida.
     chi abbia la precedenza in modalità manuale tra potenziometro e dashboard; ->per me varia: se la dashboard risulta unconnected passa il controllo al WCS
     come gestire due richieste contemporanee di cambio modalità; -> bisogna scegliere chi ha la pirorità...
-    cosa succeda, dopo un’apertura al 100%, quando il livello scende sotto L₂ ma rimane sopra L₁; in pratica cosa fare quando trona sotto ad l2 (aprire al 50% o lasicare aperto al 100% finche non scende a livello < l1 )
+    gestione L2 definita: HIGH entra solo sopra L2 e resta attivo fino a scendere sotto L2; nella fascia intermedia attende T1 mantenendo il 100%, poi passa al 50%.
     quali messaggi e formati usare per MQTT, seriale e HTTP;
-    linguaggi e framework per CUS e dashboard.
+    tecnologie definite: CUS Java 17 con Vert.x, Paho e jSerialComm; DBS HTML/CSS/JavaScript con Fetch API e Chart.js.
 
 
 FONTI TROVATE:
