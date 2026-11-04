@@ -6,12 +6,14 @@
 
 % Frontespizio
 \pagestyle{empty}
+\hypersetup{pageanchor=false}
 \input{sections/00_header}
 \clearpage
 
 % Indice e numerazione
 \pagestyle{plain}
 \pagenumbering{arabic}
+\hypersetup{pageanchor=true}
 
 \tableofcontents
 \clearpage
@@ -20,7 +22,28 @@
 \input{sections/01_introduction}
 \clearpage
 
-% Tank Monitoring Subsystem
-\input{sections/02_tms}
+\input{sections/02_architecture}
+\clearpage
+
+\input{sections/03_tms}
+\clearpage
+\input{sections/04_cus}
+\clearpage
+\input{sections/05_wcs}
+\clearpage
+\input{sections/06_dbs}
+\clearpage
+\input{sections/07_integration}
+\clearpage
+\input{sections/08_conclusions}
+
+\begin{thebibliography}{9}
+    \bibitem{assignment03}
+    A. Ricci, \emph{Assignment \#03 -- Smart Tank Monitoring System},
+    Embedded Systems and Internet of Things, a.a. 2025/2026,
+    versione 1.0.0-20251112.
+    \href{https://github.com/pslab-unibo/esiot-2025-2026/blob/master/assignments/assignment-03.md}{Consegna ufficiale nel repository del corso}.
+    Consultato il 3 novembre 2026.
+\end{thebibliography}
 
 \end{document}

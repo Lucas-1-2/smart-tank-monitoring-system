@@ -1,0 +1,11 @@
+\begin{tikzpicture}[node distance=1.2cm and 1.4cm]
+\node[block] (tms) {\textbf{TMS}\\ESP32\\Sonar e LED};
+\node[block,right=of tms] (broker) {\textbf{Broker MQTT}};
+\node[block,below=of broker] (cus) {\textbf{CUS}\\PC/Java\\Controllo e stato};
+\node[block,left=of cus] (wcs) {\textbf{WCS}\\Arduino UNO\\Servo e LCD\\Comandi locali};
+\node[block,right=of cus] (dbs) {\textbf{DBS}\\Browser\\Supervisione e comandi};
+\draw[flow] (tms) -- node[above,font=\footnotesize]{misure} (broker);
+\draw[flow] (broker) -- node[right,font=\footnotesize]{MQTT} (cus);
+\draw[flow,<->] (wcs) -- node[above,font=\footnotesize]{seriale} (cus);
+\draw[flow,<->] (cus) -- node[above,font=\footnotesize]{HTTP} (dbs);
+\end{tikzpicture}

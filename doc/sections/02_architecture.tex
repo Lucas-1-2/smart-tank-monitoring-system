@@ -1,0 +1,45 @@
+\section{Architettura generale del sistema}
+\label{sec:architecture}
+
+\subsection{Componenti e confini di responsabilità}
+
+Il sistema adotta un'architettura distribuita con controllo centralizzato nel CUS, responsabile della gestione dello stato globale, delle modalità operative e della determinazione dell'apertura della valvola.
+Le responsabilità dei diversi sottosistemi sono illustrate nella Figura~\ref{fig:architecture}.
+
+\begin{figure}[htbp]
+\centering
+\input{figures/architecture}
+\caption{Architettura del sistema e collegamenti tra i sottosistemi.}
+\label{fig:architecture}
+\end{figure}
+
+Il TMS acquisisce il livello dell'acqua tramite un sensore sonar e trasmette le misure al CUS.
+Quest'ultimo elabora i dati ricevuti, applica la politica di controllo e rende disponibile lo stato del sistema.
+Il WCS gestisce l'attuatore e l'interfaccia locale, consentendo all'operatore di richiedere il cambio di modalità tramite pulsante e la regolazione dell'apertura tramite potenziometro.
+Il DBS permette il monitoraggio e il controllo remoto attraverso un'interfaccia web.
+
+\subsection{Comunicazione e propagazione dello stato}
+
+La comunicazione tra TMS e CUS avviene tramite MQTT, utilizzando un broker per lo scambio delle misure.
+Il WCS comunica con il CUS attraverso una connessione seriale, inviando le richieste dell'operatore e ricevendo gli aggiornamenti di stato necessari al controllo dell'attuatore e del display.
+
+Il DBS comunica con il CUS tramite HTTP, recuperando periodicamente lo stato del sistema e lo storico delle misure.
+Attraverso la stessa interfaccia può inviare richieste di cambio modalità e regolazione dell'apertura.
+
+I dettagli dei protocolli e dei messaggi sono descritti nella Sezione~\ref{subsec:integration-contracts}.
+
+\subsection{Stato globale e disponibilità}
+
+Il CUS gestisce le modalità operative \code{AUTOMATIC} e \code{MANUAL} e monitora la disponibilità delle misure provenienti dal TMS.
+In assenza di misure valide per un intervallo di tempo prestabilito, il sistema passa allo stato \code{UNCONNECTED}.
+
+Il DBS distingue questa condizione dalla propria indisponibilità di comunicazione con il CUS, rappresentata come \code{NOT AVAILABLE}.
+Il backend può quindi essere raggiungibile anche quando le misure del TMS non sono disponibili.
+
+\subsection{Scelte architetturali}
+
+La politica di controllo è gestita esclusivamente dal CUS.
+Le interfacce locale e remota inviano richieste che vengono valutate in base allo stato corrente del sistema, senza una priorità prestabilita tra i due operatori.
+
+Nel backend, la logica di controllo è separata dai componenti responsabili delle comunicazioni MQTT, seriali e HTTP.
+L'accesso allo stato condiviso è sincronizzato per gestire le operazioni concorrenti, mentre le operazioni di comunicazione vengono eseguite al di fuori delle sezioni critiche.
