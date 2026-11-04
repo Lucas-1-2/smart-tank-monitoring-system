@@ -21,6 +21,8 @@
 \setlength{\parindent}{1.2em}
 \setlength{\parskip}{0pt}
 \raggedbottom
+% Allow justified paragraphs to accommodate long source identifiers.
+\setlength{\emergencystretch}{3em}
 
 % -------------------------------------------------
 % Immagini e pagine orizzontali
@@ -28,6 +30,8 @@
 \usepackage{graphicx}
 \usepackage{pdflscape}
 \usepackage{float}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,calc}
 
 % -------------------------------------------------
 % Tabelle e didascalie
@@ -62,6 +66,8 @@
 \usepackage{hyperref}
 
 \hypersetup{
+    pdftitle={Smart Tank Monitoring System - Relazione tecnica Assignment 03},
+    pdfsubject={Architettura, implementazione e validazione del prototipo},
     colorlinks=true,
     linkcolor=MaterialBlue,
     urlcolor=MaterialBlue,
@@ -72,3 +78,10 @@
 % Comandi comuni
 % -------------------------------------------------
 \newcommand{\code}[1]{\texttt{#1}}
+\newcommand{\reviewnote}[1]{\par\smallskip\noindent\textbf{Da completare per la revisione finale:} #1\par\smallskip}
+\tikzset{
+    block/.style={draw,rounded corners,align=center,inner sep=6pt,
+        font=\small,text width=3.3cm,fill=blue!4},
+    state/.style={block,text width=3.8cm},
+    flow/.style={-{Stealth[length=2mm]},semithick}
+}

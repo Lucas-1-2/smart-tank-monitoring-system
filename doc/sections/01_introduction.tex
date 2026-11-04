@@ -1,0 +1,34 @@
+\section{Introduzione e obiettivi}
+\label{sec:introduction}
+
+\subsection{Contesto e obiettivi del progetto}
+
+Il progetto realizza un prototipo distribuito per monitorare il
+livello dell'acqua piovana in una tanica e controllare l'apertura
+di un canale di scarico. Il sistema prevede l'acquisizione periodica
+delle misure, il controllo automatico dell'apertura e la possibilità
+di intervento da parte dell'operatore, sia localmente sia attraverso
+un'interfaccia web.
+
+La consegna dell'Assignment 03 definisce i requisiti funzionali,
+i sottosistemi e le modalità di comunicazione previste~\cite{assignment03}.
+Il sistema è composto da quattro sottosistemi:
+il Tank Monitoring Subsystem (TMS), responsabile dell'acquisizione
+delle misure; il Control Unit Subsystem (CUS), che coordina il
+funzionamento del sistema; il Water Channel Subsystem (WCS), che
+gestisce l'attuatore e l'interfaccia locale; e il Dashboard
+Subsystem (DBS), che permette il monitoraggio e il controllo remoto.
+
+\subsection{Comportamento e requisiti principali}
+
+Il sistema si avvia in modalità \code{AUTOMATIC}, nella quale
+l'apertura del canale viene regolata in base al livello dell'acqua
+e alle soglie temporali previste. In modalità \code{MANUAL},
+l'operatore può impostare direttamente l'apertura desiderata.
+È inoltre prevista la gestione dell'indisponibilità delle misure
+e delle comunicazioni.
+
+Il prototipo utilizza un ESP32 per il TMS, un Arduino UNO per
+il WCS, un backend Java eseguito su PC per il CUS e un'interfaccia
+web per il DBS. Le comunicazioni con il CUS avvengono rispettivamente
+tramite MQTT, connessione seriale e HTTP.
