@@ -1,0 +1,155 @@
+
+\section{Control Unit Subsystem (CUS)}%
+\label{sec:cus}
+
+Il CUS costituisce il nodo centrale del sistema: riceve le misure dal TMS, gestisce le richieste degli operatori e determina l'apertura da comandare alla valvola.
+
+\subsection{Architettura software}
+
+Il CUS è sviluppato in Java 17 e utilizza Maven per la gestione del progetto. Il backend si basa su Vert.x per i servizi HTTP e i timer, Eclipse Paho per MQTT e jSerialComm per la comunicazione seriale.
+
+La logica di controllo è concentrata in \code{SystemController}, che gestisce lo stato condiviso e coordina \code{AutomaticPolicy} e \code{MeasurementHistory}, responsabili rispettivamente della politica automatica e dello storico delle misure.
+I servizi MQTT, HTTP e seriale gestiscono le comunicazioni con gli altri sottosistemi, come illustrato nella Figura~\ref{fig:cus-components}.
+
+\begin{figure}[htbp]
+\centering
+\input{figures/cus_components}
+\caption{Organizzazione software del CUS e relazioni tra
+i componenti principali.}%
+\label{fig:cus-components}
+\end{figure}
+
+La configurazione viene letta dal file \path{cus.properties}, situato nella directory di avvio dell'applicazione.
+In assenza del file vengono utilizzati i valori predefiniti.
+Il percorso della directory DBS è relativo alla directory di esecuzione.
+
+I principali parametri del CUS sono riportati nella Tabella~\ref{tab:cus-parameters}.
+Le soglie, gli intervalli temporali T1 e T2 e la porta HTTP sono configurabili; il tick periodico e la capacità dello storico sono invece definiti nel codice.
+
+\begin{table}[htbp]
+\centering
+\begin{tabularx}{\linewidth}{@{}l l X@{}}
+\toprule
+\textbf{Parametro} & \textbf{Valore} & \textbf{Descrizione} \\
+\midrule
+\(L_1,L_2\) & \(40\%,70\%\) & Soglie del livello dell'acqua. \\
+\(T_1\) & \(5\,\mathrm{s}\) & Intervallo di attesa nella fascia intermedia. \\
+\(T_2\) & \(10\,\mathrm{s}\) & Tempo massimo senza misure valide. \\
+Tick & \(100\,\mathrm{ms}\) & Intervallo di controllo periodico. \\
+\(N\) & 20 & Capacità dello storico delle misure. \\
+HTTP & 8080 & Porta del servizio HTTP. \\
+\bottomrule
+\end{tabularx}
+\caption{Parametri principali del CUS e relativi valori
+predefiniti o definiti nel codice.}%
+\label{tab:cus-parameters}
+\end{table}
+\FloatBarrier%
+
+
+\subsection{Gestione dello stato e politica automatica}%
+\label{subsec:cus-policy}
+All'avvio il sistema si trova in modalità \code{AUTOMATIC}, con apertura della valvola allo \(0\%\) e livello dell'acqua non ancora disponibile.
+Il conteggio di T2 inizia all'avvio, in attesa della prima misura valida.
+
+
+\subsubsection{Politica a stati}
+La politica automatica è organizzata attraverso una FSM con cinque stati interni: \code{UNKNOWN}, stato  iniziale o successivo a un reset; \code{LOW}, associato al livello basso; \code{MID\_WAITING}, che rappresenta l'attesa T1; \code{MID\_ACTIVE}, con apertura al 50\%; e \code{HIGH}, con apertura al 100\%.
+
+Le condizioni applicate alle misure valide sono riassunte nella Tabella~\ref{tab:automatic-policy}.
+
+\begin{table}[htbp]
+\centering
+\begin{tabularx}{\linewidth}{@{}l X@{}}
+\toprule
+\textbf{Livello} & \textbf{Comportamento} \\
+\midrule
+
+\(p<L_1\)
+& Passa a \code{LOW} e imposta l'apertura allo \(0\%\). \\
+
+\(p=L_1\)
+& Mantiene il \(50\%\) se si trova già in \code{MID\_ACTIVE}; altrimenti passa a \code{LOW} e chiude la valvola. \\
+
+\(L_1<p<L_2\)
+& Mantiene il \(50\%\) se già in \code{MID\_ACTIVE}; altrimenti entra in \code{MID\_WAITING}, se necessario, conservando l'apertura precedente durante T1. \\
+
+\(p=L_2\)
+& Mantiene il \(100\%\) se già in \code{HIGH}; altrimenti segue la gestione della fascia intermedia. \\
+
+\(p>L_2\)
+& Passa a \code{HIGH} e imposta immediatamente l'apertura al \(100\%\). \\
+
+\bottomrule
+\end{tabularx}
+\caption{Comportamento della politica automatica in funzione del livello e dello stato precedente.}%
+\label{tab:automatic-policy}
+\end{table}
+
+In \code{MID\_WAITING}, al raggiungimento di T1, la politica passa a \code{MID\_ACTIVE} e imposta l'apertura al \(50\%\). La scadenza viene verificata periodicamente dal CUS, anche in assenza di nuove misure.
+
+Durante l'attesa viene mantenuta l'apertura precedente.
+Ad esempio, dopo una discesa da \code{HIGH} nella fascia intermedia, il \(100\%\) rimane attivo fino alla scadenza di T1, quando l'apertura passa al \(50\%\).
+
+Le principali transizioni della politica automatica sono rappresentate nella Figura~\ref{fig:cus-policy}.
+
+\begin{figure}[htbp]
+\centering
+\input{figures/cus_policy}
+\caption{Stati e principali transizioni della politica
+automatica.}
+\label{fig:cus-policy}
+\end{figure}
+
+
+\subsubsection{Misure non valide, timeout e recupero}
+Quando il TMS segnala una lettura non valida tramite \code{NO\_ECHO}, il CUS registra un campione \code{null} nello storico e rende il livello corrente non disponibile.
+In modalità \code{AUTOMATIC}, la politica viene azzerata, mantenendo invariata l'apertura della valvola.
+
+Il timer T2 viene aggiornato soltanto alla ricezione di misure valide.
+Se non ne arrivano per almeno T2, il CUS passa allo stato \code{UNCONNECTED} e imposta l'apertura al \(5\%\).
+Questo valore rappresenta un compromesso progettuale per consentire un deflusso limitato, evitando al tempo stesso uno svuotamento rapido della vasca.
+
+Alla ricezione di una nuova misura valida, il sistema ripristina la modalità \code{AUTOMATIC} e rivaluta il livello attraverso la politica di controllo.
+Il recupero prevede sempre l'applicazione iniziale del fallback al \(5\%\), indipendentemente dal momento in cui viene rilevata la scadenza di T2.
+
+
+\subsubsection{Comandi manuali e storico}
+Il passaggio alla modalità \code{MANUAL} mantiene l'apertura corrente della valvola.
+L'operatore può impostare un'apertura compresa tra \(0\%\) e \(100\%\), tramite l'interfaccia locale o la dashboard.
+Le misure del TMS continuano ad aggiornare il livello e lo storico, senza modificare l'apertura comandata.
+
+Il ritorno alla modalità \code{AUTOMATIC} azzera la politica di controllo e rivaluta l'ultima misura, se disponibile.
+Durante lo stato \code{UNCONNECTED}, le richieste di cambio modalità e di regolazione dell'apertura vengono rifiutate.
+
+Lo storico conserva in memoria gli ultimi \(N\) campioni ricevuti e accettati, comprese le misure non valide rappresentate da \code{null}.
+I campioni sono ordinati cronologicamente in base alla ricezione da parte del CUS.
+Lo storico non è persistente e viene azzerato al riavvio.
+
+
+\subsection{Comunicazione e sincronizzazione}
+Il CUS gestisce eventi provenienti da MQTT, HTTP, comunicazione seriale e timer periodici, che possono essere elaborati concorrentemente.
+L'accesso allo stato condiviso, alla politica automatica e allo storico è protetto da un lock, mentre le operazioni di comunicazione vengono eseguite al di fuori delle sezioni critiche.
+
+Lo stato del sistema è rappresentato attraverso snapshot immutabili, utilizzati per fornire informazioni coerenti ai componenti esterni.
+
+Gli aggiornamenti destinati al WCS vengono accorpati per privilegiare lo stato più recente, evitando l'accumulo di stati intermedi.
+Le richieste ricevute tramite seriale vengono invece elaborate dal controller, che ne verifica la compatibilità con lo stato corrente e restituisce lo stato aggiornato.
+
+
+
+
+\subsection{Validazione, test e limitazioni}%
+\label{subsec:cus-validation}
+Il CUS è stato verificato attraverso test unitari JUnit, dedicati alla politica automatica, alla gestione dello stato e all'interpretazione dei messaggi MQTT.
+
+I test coprono le transizioni tra modalità operative, il comportamento alle soglie L1 e L2, le scadenze T1 e T2, la gestione delle misure non valide e dei comandi manuali.
+Sono inoltre verificate la sincronizzazione degli aggiornamenti destinati al WCS e la coerenza del recupero dopo T2.
+Tutti i test unitari eseguiti sono stati superati.
+
+Le verifiche unitarie non comprendono il funzionamento integrato con broker MQTT, dispositivi fisici e dashboard,che richiede prove separate.
+
+Tra le limitazioni del prototipo, il CUS non dispone di un riscontro sulla posizione effettiva della valvola.
+La comunicazione seriale non prevede meccanismi automatici di riconnessione e ritrasmissione dei messaggi non
+consegnati.
+I servizi HTTP e MQTT non implementano autenticazione o cifratura delle comunicazioni.

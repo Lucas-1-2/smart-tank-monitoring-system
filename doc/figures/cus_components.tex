@@ -1,0 +1,13 @@
+\begin{tikzpicture}[node distance=1cm and 1.4cm,block/.append style={font=\footnotesize}]
+\node[block] (mqtt) {TmsMqttService\\Parser MQTT};
+\node[block,right=of mqtt] (http) {HttpService\\API e file DBS};
+\node[block,right=of http] (serial) {WcsSerialAgent\\SerialCommChannel};
+\node[block,below=1.2cm of http] (core) {SystemController\\Stato sincronizzato};
+\node[block,below left=0.9cm and 0.5cm of core] (policy) {AutomaticPolicy\\Soglie e timer};
+\node[block,below right=0.9cm and 0.5cm of core] (history) {MeasurementHistory\\Ultimi 20 campioni};
+\draw[flow] (mqtt.south) |- (core.west);
+\draw[flow,<->] (http) -- (core);
+\draw[flow,<->] (serial.south) |- (core.east);
+\draw[flow] (core.south) -- ++(0,-0.3) -| (policy.north);
+\draw[flow] (core.south) -- ++(0,-0.3) -| (history.north);
+\end{tikzpicture}

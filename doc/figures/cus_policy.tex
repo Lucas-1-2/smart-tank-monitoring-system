@@ -1,0 +1,40 @@
+\begin{tikzpicture}[x=1cm,y=1cm]
+\node[state] (unknown) at (0,0) {UNKNOWN\\Politica azzerata};
+\node[state,text width=3cm] (low) at (-4.3,-2.1) {LOW\\Apertura 0\%};
+\node[state,text width=3cm] (high) at (4.3,-2.1) {HIGH\\Apertura 100\%};
+\node[state] (wait) at (0,-4.1) {MID\_WAITING\\Mantiene apertura};
+\node[state] (active) at (0,-6.1) {MID\_ACTIVE\\Apertura 50\%};
+\draw[flow] (unknown) -- node[right,font=\footnotesize]{\(L_1<p\leq L_2\)} (wait);
+\draw[flow] (low.south) |- node[pos=0.3,left,font=\footnotesize]{\(L_1<p\leq L_2\)} (wait.west);
+\draw[flow] (high.south) |- node[pos=0.3,right,font=\footnotesize]{\(L_1<p<L_2\)} (wait.east);
+\draw[flow] (wait) -- node[right,font=\footnotesize]{\(\Delta t\geq T_1\)} (active);
+\end{tikzpicture}
+\par\smallskip
+
+
+\begin{minipage}{0.94\linewidth}
+\footnotesize
+\raggedright
+
+\textbf{Condizioni e transizioni aggiuntive:}
+
+\begin{itemize}
+    \setlength{\itemsep}{3pt}
+    \setlength{\parsep}{0pt}
+    \setlength{\topsep}{4pt}
+
+    \item \textbf{Soglia L1:}
+    con \(p<L_1\) si passa a LOW. A \(p=L_1\), MID\_ACTIVE mantiene il 50\%, mentre gli altri stati passano a LOW.
+
+    \item \textbf{Soglia L2:}
+    con \(p>L_2\) si passa a HIGH, che rimane attivo anche a \(p=L_2\).
+
+    \item \textbf{Timer T1:}
+    alla scadenza, MID\_WAITING passa a MID\_ACTIVE, anche senza una nuova misura.
+
+    \item \textbf{Reset:}
+    riporta la politica allo stato UNKNOWN.
+\end{itemize}
+\end{minipage}
+
+
