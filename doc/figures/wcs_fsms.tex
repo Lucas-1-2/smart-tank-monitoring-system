@@ -1,0 +1,51 @@
+
+\begin{tikzpicture}[node distance=3.2cm and 3cm]
+
+\node[state] (released) {RELEASED};
+\node[state,right=of released] (pressed) {PRESSED};
+
+\draw[flow] (released) to[bend left=22]
+    node[above,font=\footnotesize,align=center]
+    {pressione / richiesta} (pressed);
+
+\draw[flow] (pressed) to[bend left=22]
+    node[below,font=\footnotesize]
+    {rilascio} (released);
+
+\node[state,below=of released] (disabled) {DISABLED};
+\node[state,right=of disabled] (active) {ACTIVE};
+
+\draw[flow] (disabled) to[bend left=22]
+    node[above,font=\footnotesize,align=center]
+    {MANUAL confermato /\\ acquisizione riferimento} (active);
+
+\draw[flow] (active) to[bend left=22]
+    node[below,font=\footnotesize]
+    {uscita da MANUAL} (disabled);
+
+\end{tikzpicture}
+
+\par\smallskip
+
+\begin{minipage}{0.94\linewidth}
+\footnotesize
+\raggedright%
+
+\textbf{Condizioni operative:}
+
+\begin{itemize}
+    \setlength{\itemsep}{2pt}
+    \setlength{\parsep}{0pt}
+    \setlength{\topsep}{3pt}
+
+    \item \textbf{Pulsante:}
+    una richiesta per pressione, senza ripetizioni fino al rilascio.
+
+    \item \textbf{Potenziometro:}
+    in ACTIVE invia una richiesta per variazioni di almeno 5 punti percentuali o al raggiungimento di un estremo con variazione non nulla.
+
+    \item \textbf{Stati iniziali:}
+    RELEASED e DISABLED.
+\end{itemize}
+
+\end{minipage}
