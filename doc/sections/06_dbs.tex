@@ -1,0 +1,54 @@
+
+\section{Dashboard Subsystem (DBS)}%
+\label{sec:dbs}
+
+Il DBS permette di monitorare e controllare il sistema attraverso un'interfaccia web.
+Visualizza la modalità operativa, il livello dell'acqua, l'apertura comandata della valvola e lo storico delle misure.
+Consente inoltre all'operatore di inviare richieste al CUS, che mantiene il controllo dello stato globale.
+
+\subsection{Architettura dell'interfaccia web}
+
+Il DBS è sviluppato con HTML, CSS e JavaScript, senza l'utilizzo di framework frontend.
+L'interfaccia comprende pannelli informativi, controlli per l'operatore e un grafico per la visualizzazione dello storico.
+
+Il codice JavaScript è organizzato in moduli che separano la comunicazione HTTP, la gestione dell'interfaccia e l'aggiornamento del grafico.
+Quest'ultimo utilizza Chart.js, incluso localmente nel progetto.
+
+\subsection{Comunicazione HTTP e gestione dello stato}%
+\label{subsec:dbs-state}
+
+Il DBS comunica con il CUS tramite HTTP, recuperando periodicamente lo stato del sistema e lo storico delle misure.
+Nella configurazione attuale, le richieste sono indirizzate a \url{http://localhost:8080}, con intervalli di aggiornamento nominali di \(1000\,\mathrm{ms}\) per entrambi i dati.
+
+L'interfaccia distingue le misure non disponibili, rappresentate da \code{null}, da un livello valido pari allo \(0\%\).
+Nel grafico, le misure non valide sono rappresentate mediante interruzioni della linea.
+
+La dashboard distingue inoltre due condizioni di indisponibilità.
+Lo stato \code{UNCONNECTED} viene comunicato dal CUS quando non riceve misure valide dal TMS per un intervallo prolungato.
+La condizione \code{NOT AVAILABLE} indica invece che il DBS non riesce a ottenere uno stato utilizzabile dal CUS.
+
+In quest'ultimo caso, i comandi vengono disabilitati e gli ultimi valori disponibili rimangono visualizzati, senza essere considerati informazioni aggiornate.
+Un errore nel recupero del solo storico viene invece segnalato separatamente, senza modificare lo stato di disponibilità del CUS.
+
+\subsection{Interazione dell'operatore}
+
+L'interfaccia mette a disposizione un pulsante per richiedere il cambio tra le modalità \code{AUTOMATIC} e \code{MANUAL} e uno slider per regolare l'apertura della valvola.
+
+Lo slider è abilitato soltanto in modalità \code{MANUAL}, quando il CUS è disponibile.
+Durante la regolazione viene mostrato il valore selezionato, mentre la richiesta di apertura viene inviata al termine della modifica.
+
+Le richieste dell'operatore vengono elaborate dal CUS.
+La dashboard aggiorna i valori del sistema sulla base dello stato restituito dal backend, senza considerare automaticamente applicato un comando appena inviato.
+
+Durante l'elaborazione delle richieste, i relativi controlli vengono temporaneamente disabilitati.
+
+\subsection{Validazione, test e limitazioni}%
+\label{subsec:dbs-validation}
+
+Il DBS è stato sottoposto a prove funzionali, verificando la visualizzazione dello stato del sistema, del livello dell'acqua, dell'apertura comandata e dello storico delle misure.
+
+Le prove hanno confermato il funzionamento del cambio di modalità, della regolazione tramite slider e dell'aggiornamento del grafico.
+È stata inoltre verificata la gestione dell'indisponibilità del CUS e del successivo ripristino della comunicazione.
+
+Tra le limitazioni, la dashboard aggiorna le informazioni periodicamente e non rappresenta necessariamente lo stato istantaneo del sistema.
+Inoltre, non verifica direttamente la disponibilità del WCS né la posizione effettiva della valvola.
