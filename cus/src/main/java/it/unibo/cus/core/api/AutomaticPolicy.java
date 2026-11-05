@@ -9,7 +9,8 @@ package it.unibo.cus.core.api;
  * the WCS or change the global system mode.
  *
  * The policy works as follows:
- * - At or below L1, the valve opening is 0%.
+ * - Below L1, the valve opening is 0%.
+ * - At L1, the opening is 50% only if MID_ACTIVE was already active; otherwise 0%.
  * - Above L2, the valve opening is immediately 100% and stays so until below L2.
  * - At L2, HIGH is retained only if the policy was already HIGH.
  * - Otherwise, above L1 and at or below L2, the previous opening is kept during T1.
@@ -21,11 +22,11 @@ public interface AutomaticPolicy {
     enum State {
         /** No valid measurement has been processed since the last reset. */
         UNKNOWN,
-        /** The level is at or below L1. */
+        /** The level is at or below L1, without retained MID_ACTIVE. */
         LOW,
         /** Above L1 and at or below L2, without retained HIGH; T1 has not ended. */
         MID_WAITING,
-        /** Above L1 and at or below L2, without retained HIGH; T1 has ended. */
+        /** T1 has ended in the middle range; the 50% opening is retained at L1. */
         MID_ACTIVE,
         /** Entered above L2 and retained until the level falls below L2. */
         HIGH

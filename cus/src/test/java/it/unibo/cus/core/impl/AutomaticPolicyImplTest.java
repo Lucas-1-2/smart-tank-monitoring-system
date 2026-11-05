@@ -14,6 +14,54 @@ class AutomaticPolicyImplTest {
     }
 
     @Test
+    void reachingL1WhileLowKeepsValveClosed() {
+        final AutomaticPolicyImpl policy = new AutomaticPolicyImpl(40, 70, 1000);
+
+        assertEquals(0, policy.onMeasurement(30, 80, 0));
+        assertEquals(0, policy.onMeasurement(40, 0, 100));
+        assertEquals(AutomaticPolicyImpl.State.LOW, policy.getState());
+        assertEquals(0, policy.onTick(0, 2000));
+        assertEquals(AutomaticPolicyImpl.State.LOW, policy.getState());
+    }
+
+    @Test
+    void reachingL1WhileWaitingCancelsT1EvenAtItsDeadline() {
+        final AutomaticPolicyImpl policy = new AutomaticPolicyImpl(40, 70, 1000);
+
+        assertEquals(30, policy.onMeasurement(60, 30, 0));
+        assertEquals(AutomaticPolicyImpl.State.MID_WAITING, policy.getState());
+        assertEquals(0, policy.onMeasurement(40, 30, 1000));
+        assertEquals(AutomaticPolicyImpl.State.LOW, policy.getState());
+        assertEquals(0, policy.onTick(0, 2000));
+
+        assertEquals(0, policy.onMeasurement(60, 0, 2100));
+        assertEquals(0, policy.onTick(0, 3099));
+        assertEquals(50, policy.onTick(0, 3100));
+    }
+
+    @Test
+    void midActiveIsRetainedAtL1UntilLevelFallsBelowIt() {
+        final AutomaticPolicyImpl policy = new AutomaticPolicyImpl(40, 70, 1000);
+
+        assertEquals(0, policy.onMeasurement(60, 0, 0));
+        assertEquals(50, policy.onTick(0, 1000));
+        assertEquals(AutomaticPolicyImpl.State.MID_ACTIVE, policy.getState());
+
+        assertEquals(50, policy.onMeasurement(40, 50, 1100));
+        assertEquals(AutomaticPolicyImpl.State.MID_ACTIVE, policy.getState());
+        assertEquals(50, policy.onMeasurement(40, 50, 2200));
+        assertEquals(50, policy.onTick(50, 2300));
+
+        assertEquals(0, policy.onMeasurement(39.9, 50, 2400));
+        assertEquals(AutomaticPolicyImpl.State.LOW, policy.getState());
+        assertEquals(0, policy.onMeasurement(40, 0, 2500));
+        assertEquals(AutomaticPolicyImpl.State.LOW, policy.getState());
+        assertEquals(0, policy.onMeasurement(60, 0, 2600));
+        assertEquals(0, policy.onTick(0, 3599));
+        assertEquals(50, policy.onTick(0, 3600));
+    }
+
+    @Test
     void highLevelOpensValveImmediately() {
         final AutomaticPolicyImpl policy = new AutomaticPolicyImpl(40, 70, 1000);
         assertEquals(100, policy.onMeasurement(70.1, 0, 0));

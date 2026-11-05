@@ -64,9 +64,9 @@ public final class SystemControllerImpl implements SystemController {
             final int oldValve = valveOpening;
 
             measurementHistory.add(new Measurement(now, value));
-            waterLevel = value;
 
             if (value == null) {
+                waterLevel = null;
                 if (mode == OperatingMode.AUTOMATIC) {
                     automaticPolicy.reset();
                 }
@@ -74,10 +74,14 @@ public final class SystemControllerImpl implements SystemController {
                 return;
             }
 
-            final boolean recoveringFromUnconnected =
-                !tmsAvailable || now - lastValidMeasurementTime >= Config.T2_MS;
+            if (tmsAvailable && now - lastValidMeasurementTime >= Config.T2_MS) {
+                enterUnconnectedLocked();
+            }
+
+            final boolean recoveringFromUnconnected = !tmsAvailable;
             lastValidMeasurementTime = now;
             tmsAvailable = true;
+            waterLevel = value;
 
             if (recoveringFromUnconnected) {
                 mode = OperatingMode.AUTOMATIC;
@@ -108,10 +112,7 @@ public final class SystemControllerImpl implements SystemController {
             final int oldValve = valveOpening;
 
             if (tmsAvailable && now - lastValidMeasurementTime >= Config.T2_MS) {
-                tmsAvailable = false;
-                waterLevel = null;
-                valveOpening = 5;
-                automaticPolicy.reset();
+                enterUnconnectedLocked();
             } else if (
                 tmsAvailable
                     && mode == OperatingMode.AUTOMATIC
@@ -243,6 +244,14 @@ public final class SystemControllerImpl implements SystemController {
     public SystemSnapshot takeWcsStateUpdate() throws InterruptedException {
         wcsUpdateSignals.take();
         return getSnapshot();
+    }
+
+    /** Applies the timeout fallback; the caller publishes only the final state. */
+    private void enterUnconnectedLocked() {
+        tmsAvailable = false;
+        waterLevel = null;
+        valveOpening = 5;
+        automaticPolicy.reset();
     }
 
     private void publishWcsUpdateIfNeededLocked(final PublicState oldState, final int oldValve) {
