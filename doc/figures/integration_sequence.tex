@@ -1,0 +1,22 @@
+\begin{tikzpicture}[x=1cm,y=1cm]
+\foreach \name/\x in {TMS/0,Broker/3,CUS/6,WCS/9,DBS/12}{
+    \node[draw,rounded corners,fill=blue!4,minimum width=1.8cm,
+        minimum height=0.7cm] at (\x,0) {\name};
+    \draw[dashed,gray] (\x,-0.4) -- (\x,-6.5);
+}
+
+\draw[flow] (0,-1) -- node[above,font=\footnotesize]{JSON misura} (3,-1);
+\draw[flow] (3,-1.7) -- node[above,font=\footnotesize]{MQTT} (6,-1.7);
+
+\node[font=\footnotesize,align=left,anchor=west] at (6.3,-2.2)
+    {storico e politica};
+
+\draw[flow] (6,-3.0) -- node[above,font=\footnotesize]{STATE} (9,-3.0);
+
+\draw[flow] (9,-3.4) -- (9.75,-3.4) -- (9.75,-4.0) -- (9,-4.0);
+\node[font=\footnotesize,anchor=west] at (9.9,-3.72)
+    {servo e LCD};
+
+\draw[flow] (12,-4.8) -- node[above,font=\footnotesize]{GET stato / storico} (6,-4.8);
+\draw[flow] (6,-5.7) -- node[above,font=\footnotesize]{JSON} (12,-5.7);
+\end{tikzpicture}

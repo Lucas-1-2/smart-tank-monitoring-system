@@ -1,0 +1,161 @@
+
+\section{Integrazione e comunicazione}%
+\label{sec:integration}
+
+\subsection{Interazione tra sottosistemi e contratti}%
+\label{subsec:integration-contracts}
+
+I sottosistemi comunicano attraverso tre protocolli: MQTT tra TMS e CUS, seriale tra WCS e CUS e HTTP tra DBS e CUS.
+
+Nel funzionamento automatico, il TMS invia le misure attraverso il broker MQTT.
+Il CUS le elabora, aggiorna lo stato del sistema e, quando necessario, trasmette al WCS il nuovo comando di apertura.
+Il WCS aggiorna di conseguenza il servomotore e il display LCD.
+
+Il DBS consulta periodicamente lo stato e lo storico tramite HTTP, indipendentemente dall'aggiornamento del WCS.
+La Figura~\ref{fig:sequence} rappresenta il flusso delle informazioni tra i sottosistemi.
+
+\begin{figure}[htbp]
+\centering
+\input{figures/integration_sequence}
+\caption{Sequenza logica di una misura che determina un aggiornamento del sistema. La consultazione del DBS è indipendente dall'attuazione sul WCS}%
+\label{fig:sequence}
+\end{figure}
+
+\paragraph{MQTT.}
+
+Il TMS pubblica le misure su un topic MQTT condiviso con il CUS, utilizzando messaggi JSON.
+Una misura valida contiene lo stato \code{OK}, il livello dell'acqua in metri e la percentuale di riempimento.
+Una lettura non valida viene invece segnalata attraverso \code{NO\_ECHO}.
+
+Il CUS utilizza la percentuale ricevuta per la politica automatica e assegna il timestamp ai campioni quando vengono ricevuti.
+La comunicazione utilizza QoS 0 e non prevede una conferma applicativa dell'elaborazione della misura.
+
+\paragraph{Seriale.}
+
+La comunicazione tra WCS e CUS utilizza un protocollo testuale a 115200 baud.
+Il WCS invia richieste di sincronizzazione e comandi dell'operatore, mentre il CUS trasmette gli aggiornamenti dello stato.
+
+I principali messaggi sono riportati nella Tabella~\ref{tab:serial-protocol}.
+
+\begin{table}[htbp]
+\centering
+\begin{tabularx}{\linewidth}{@{}l X@{}}
+\toprule
+\textbf{Messaggio} & \textbf{Significato} \\
+\midrule
+
+\code{READY}
+& Richiesta di sincronizzazione dal WCS \\
+
+\code{CMD,MODE,\ldots}
+& Richiesta di cambio modalità dal WCS \\
+
+\code{CMD,VALVE,\ldots}
+& Richiesta di apertura dal WCS \\
+
+\code{STATE,\ldots}
+& Stato corrente trasmesso dal CUS al WCS \\
+
+\code{LOG,\ldots}
+& Messaggio diagnostico opzionale del WCS \\
+
+\bottomrule
+\end{tabularx}
+\caption{Principali messaggi del protocollo seriale tra WCS e CUS}%
+\label{tab:serial-protocol}
+\end{table}
+
+I comandi inviati dal WCS vengono valutati dal CUS, che restituisce lo stato corrente del sistema.
+Il messaggio \code{STATE} rappresenta quindi lo stato definito dal controller, non una conferma dell'effettiva posizione del servomotore.
+
+\paragraph{HTTP.}
+
+Il DBS utilizza le API HTTP del CUS per consultare lo stato del sistema, recuperare lo storico delle misure e inviare richieste dell'operatore.
+
+Le operazioni disponibili sono riportate nella Tabella~\ref{tab:http-api}.
+
+\begin{table}[htbp]
+\centering
+\begin{tabularx}{\linewidth}{@{}l X@{}}
+\toprule
+\textbf{Operazione} & \textbf{Funzione} \\
+\midrule
+
+\code{GET} \path{/api/state}
+& Restituisce modalità, apertura e livello corrente. \\
+
+\code{GET} \path{/api/measurements}
+& Restituisce gli ultimi \(N\) campioni dello storico. \\
+
+\code{POST} \path{/api/mode}
+& Richiede il cambio di modalità operativa. \\
+
+\code{POST} \path{/api/valve}
+& Richiede una nuova apertura in modalità MANUAL. \\
+
+\bottomrule
+\end{tabularx}
+\caption{Operazioni HTTP esposte dal CUS e utilizzate dal DBS}%
+\label{tab:http-api}
+\end{table}
+
+Le richieste di modifica vengono accettate o rifiutate dal CUS in base allo stato corrente.
+Il DBS aggiorna la propria rappresentazione utilizzando le informazioni restituite dal backend.
+
+\FloatBarrier%
+
+\subsection{Scenari operativi e gestione delle interruzioni}%
+\label{subsec:integration-scenarios}
+
+\paragraph{Avvio e sincronizzazione.}
+
+All'avvio il CUS inizializza lo stato in modalità \code{AUTOMATIC}, mentre il WCS mantiene la valvola chiusa fino alla ricezione di uno stato valido.
+La sincronizzazione avviene attraverso lo scambio dei messaggi \code{READY} e \code{STATE}.
+
+Il DBS acquisisce autonomamente lo stato tramite HTTP, abilitando i controlli in base alla modalità e alla disponibilità del CUS.
+
+\paragraph{Controllo automatico.}
+
+Le misure del TMS vengono elaborate dal CUS secondo la politica descritta nella Sezione~\ref{subsec:cus-policy}.
+Le variazioni dell'apertura vengono comunicate al WCS, mentre il DBS rileva gli aggiornamenti attraverso le proprie richieste periodiche.
+
+La scadenza di T1 può determinare una variazione dell'apertura anche senza la ricezione di una nuova misura.
+
+\paragraph{Controllo locale e remoto.}
+
+L'operatore può richiedere il cambio di modalità e la regolazione dell'apertura attraverso il WCS o il DBS.
+Entrambe le interfacce inviano le richieste al CUS, che gestisce lo stato condiviso e determina il comando effettivo.
+
+Non è prevista una priorità fissa tra operatore locale e remoto.
+Le richieste concorrenti vengono gestite dal controller e le interfacce si aggiornano in base allo stato ricevuto.
+
+\paragraph{Indisponibilità delle misure.}
+
+In assenza di misure valide per almeno T2, il CUS passa allo stato \code{UNCONNECTED} e imposta l'apertura al \(5\%\).
+La condizione viene comunicata al WCS e resa disponibile al DBS.
+
+I messaggi \code{NO\_ECHO} indicano invece una misura non valida: rendono il livello corrente non disponibile e azzerano la politica automatica, senza modificare immediatamente l'apertura né rinnovare T2.
+
+Alla ricezione di una nuova misura valida dopo la scadenza di T2, il CUS ripristina la modalità \code{AUTOMATIC} e rivaluta il livello, partendo dal fallback al \(5\%\).
+
+\paragraph{Interruzioni delle comunicazioni.}
+
+Se il DBS non riesce a comunicare con il CUS, mostra la condizione \code{NOT AVAILABLE}, senza modificare lo stato degli altri sottosistemi.
+
+Un'interruzione della comunicazione seriale non impedisce al CUS di continuare a elaborare le misure del TMS e le richieste HTTP, ma il WCS può mantenere l'ultimo comando ricevuto.
+
+Analogamente, l'indisponibilità del TMS non implica necessariamente quella del CUS o della dashboard.
+Le diverse condizioni vengono quindi gestite separatamente.
+
+\subsection{Validazione end-to-end e copertura dei requisiti}%
+\label{subsec:integration-validation}
+
+La validazione del progetto comprende test unitari del CUS e prove funzionali dei sottosistemi hardware e dell'interfaccia web, descritti nei rispettivi capitoli.
+
+Sono stati verificati il funzionamento dei controlli locali del WCS, la comunicazione con il CUS, l'interazione tramite dashboard e la gestione delle condizioni di indisponibilità e ripristino.
+Le verifiche del CUS comprendono inoltre la politica automatica, i timeout e la gestione delle richieste.
+
+Queste prove forniscono riscontri sul funzionamento dei singoli sottosistemi e di alcune loro interazioni.
+Non è tuttavia disponibile una documentazione sistematica di una verifica end-to-end completa, dall'acquisizione della misura sul TMS fino all'attuazione fisica e alla visualizzazione simultanea sul DBS.
+
+La validazione complessiva rimane quindi limitata alle funzionalità e alle condizioni effettivamente verificate, senza estendere i risultati alle situazioni non sottoposte a prova.
