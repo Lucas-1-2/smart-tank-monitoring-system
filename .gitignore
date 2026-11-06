@@ -13,4 +13,5 @@ doc/*.*
 # Documentazione da versionare - pdf, tex e file da importare nella relazione
 !doc/*.tex
 !doc/*.pdf
+!doc/*video-link*
 !doc/*/*
