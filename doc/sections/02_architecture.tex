@@ -38,8 +38,7 @@ Il backend può quindi essere raggiungibile anche quando le misure del TMS non s
 
 \subsection{Scelte architetturali}
 
-La politica di controllo è gestita esclusivamente dal CUS.
-Le interfacce locale e remota inviano richieste che vengono valutate in base allo stato corrente del sistema, senza una priorità prestabilita tra i due operatori.
+Le richieste degli operatori locali e remoti vengono valutate dal CUS in base allo stato corrente, senza una priorità prestabilita tra le due interfacce.
 
-Nel backend, la logica di controllo è separata dai componenti responsabili delle comunicazioni MQTT, seriali e HTTP.
-L'accesso allo stato condiviso è sincronizzato per gestire le operazioni concorrenti, mentre le operazioni di comunicazione vengono eseguite al di fuori delle sezioni critiche.
+Nel backend, la logica di controllo è separata dai servizi di comunicazione.
+L'accesso allo stato condiviso è sincronizzato per gestire le operazioni concorrenti, mantenendo le operazioni di comunicazione al di fuori delle sezioni critiche.

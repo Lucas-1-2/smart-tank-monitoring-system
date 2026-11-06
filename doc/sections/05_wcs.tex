@@ -17,7 +17,7 @@ I collegamenti dei componenti sono riportati nella Tabella~\ref{tab:wcs-pins} e 
 \toprule
 \textbf{Pin} & \textbf{Componente e funzione} \\
 \midrule
-D8 & Pulsante per il cambio di modalità. \\
+D8 & Pulsante con circuito RC per attenuare i rimbalzi del segnale. \\
 A0 & Ingresso analogico del potenziometro. \\
 D9 & Segnale di controllo del servomotore. \\
 A4 / A5 & Collegamenti SDA / SCL del display LCD I2C. \\
@@ -83,8 +83,8 @@ La gestione del pulsante e del potenziometro è organizzata attraverso due FSM, 
 \label{fig:wcs-fsms}
 \end{figure}
 
-\code{ButtonTask} distingue gli stati \code{RELEASED} e \code{PRESSED}, generando una sola richiesta per ogni pressione.
-La richiesta non viene ripetuta finché il pulsante rimane premuto.
+\code{ButtonTask} distingue gli stati \code{RELEASED} e \code{PRESSED}, generando una richiesta al rilevamento della pressione.
+Il circuito RC attenua i rimbalzi del pulsante, mentre la FSM evita richieste ripetute finché il segnale rimane attivo.
 Prima della sincronizzazione con il CUS e durante \code{UNCONNECTED}, i comandi locali sono disabilitati.
 
 \code{PotentiometerTask} opera invece negli stati \code{DISABLED} e \code{ACTIVE}.
@@ -119,7 +119,10 @@ Le informazioni vengono aggiornate quando cambia lo stato ricevuto.
 Il WCS è stato sottoposto a prove funzionali sul prototipo fisico, verificando l'avvio e la sincronizzazione con il CUS, la gestione del pulsante, la regolazione tramite potenziometro, il movimento del servomotore e l'aggiornamento del display LCD.
 
 Le prove hanno confermato il comportamento previsto dei componenti e dell'interfaccia locale, compreso l'ingresso in modalità \code{MANUAL} senza modificare immediatamente l'apertura della valvola.
-È stata inoltre verificata la comunicazione seriale con il CUS, includendo prove di interruzione e ripristino del collegamento.
+È stato inoltre verificato il funzionamento della comunicazione seriale con il CUS.
+
+
 
 Tra le limitazioni, il WCS non dispone di un feedback sulla posizione effettiva del servomotore.
-Inoltre, non è previsto un meccanismo di monitoraggio continuo della connessione seriale: dopo la sincronizzazione, un'interruzione può lasciare nel contesto l'ultimo stato ricevuto, senza rilevare autonomamente l'indisponibilità del CUS.
+Non è inoltre prevista una gestione automatica delle interruzioni della comunicazione seriale: il WCS può mantenere l'ultimo stato  ricevuto e il ripristino del collegamento può richiedere il riavvio del CUS e del WCS.
+

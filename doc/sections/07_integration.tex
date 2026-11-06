@@ -136,7 +136,7 @@ La condizione viene comunicata al WCS e resa disponibile al DBS.
 
 I messaggi \code{NO\_ECHO} indicano invece una misura non valida: rendono il livello corrente non disponibile e azzerano la politica automatica, senza modificare immediatamente l'apertura né rinnovare T2.
 
-Alla ricezione di una nuova misura valida dopo la scadenza di T2, il CUS ripristina la modalità \code{AUTOMATIC} e rivaluta il livello, partendo dal fallback al \(5\%\).
+Alla prima misura valida dopo T2, il CUS ripristina \code{AUTOMATIC} e rivaluta il livello a partire dal fallback interno al \(5\%\).
 
 \paragraph{Interruzioni delle comunicazioni.}
 
