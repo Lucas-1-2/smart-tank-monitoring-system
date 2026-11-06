@@ -1,0 +1,21 @@
+
+\section{Conclusioni}%
+\label{sec:conclusions}
+
+\subsection{Risultati e limitazioni}
+
+Il progetto ha portato alla realizzazione di un sistema distribuito per il monitoraggio del livello dell'acqua e il controllo dell'apertura di una valvola.
+L'architettura adottata affida al CUS la gestione centralizzata dello stato e della politica di controllo, integrando acquisizione delle misure, attuazione e interfacce operatore locali e remote.
+
+La validazione ha compreso test unitari del CUS, superati con esito positivo, e prove funzionali del WCS e del DBS.
+Sono state inoltre effettuate verifiche qualitative sul TMS.
+Questi risultati confermano i comportamenti verificati, ma non costituiscono una validazione sistematica dell'intero sistema in tutte le condizioni operative.
+
+Le principali limitazioni riguardano l'assenza di un feedback sulla posizione effettiva della valvola e il rilevamento delle interruzioni della comunicazione seriale.
+La disponibilità dei singoli sottosistemi non garantisce inoltre, da sola, il corretto funzionamento dell'intera catena di controllo.
+
+\subsection{Possibili sviluppi futuri}
+
+Tra i possibili miglioramenti rientrano l'introduzione di un feedback sulla posizione della valvola, il monitoraggio della comunicazione tra CUS e WCS, la persistenza dello storico delle misure e l'autenticazione delle richieste di controllo.
+
+Queste estensioni potrebbero migliorare l'affidabilità e la gestione del sistema, pur non rientrando negli obiettivi dell'attuale implementazione.
