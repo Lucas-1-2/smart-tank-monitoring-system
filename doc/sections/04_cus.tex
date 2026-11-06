@@ -108,7 +108,7 @@ In modalità \code{AUTOMATIC}, la politica viene azzerata, mantenendo invariata 
 
 Il timer T2 viene aggiornato soltanto alla ricezione di misure valide.
 Se non ne arrivano per almeno T2, il CUS passa allo stato \code{UNCONNECTED} e imposta l'apertura al \(5\%\).
-Questo valore rappresenta un compromesso progettuale per consentire un deflusso limitato, evitando al tempo stesso uno svuotamento rapido della vasca.
+Questo valore è stato scelto con l'intento di consentire un deflusso limitato ed evitare uno svuotamento rapido della vasca.
 
 Alla prima misura valida dopo la scadenza di T2, il CUS ripristina la modalità \code{AUTOMATIC} e rivaluta il livello.
 La rivalutazione parte internamente dall'apertura di fallback al \(5\%\), senza necessariamente trasmettere al WCS un comando intermedio a tale valore.
