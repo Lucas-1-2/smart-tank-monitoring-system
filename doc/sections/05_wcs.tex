@@ -114,15 +114,8 @@ Il display LCD mostra la modalità operativa e la percentuale di apertura della 
 Le informazioni vengono aggiornate quando cambia lo stato ricevuto.
 
 
-\subsection{Validazione, test e limitazioni}%
-\label{subsec:wcs-validation}
-Il WCS è stato sottoposto a prove funzionali sul prototipo fisico, verificando l'avvio e la sincronizzazione con il CUS, la gestione del pulsante, la regolazione tramite potenziometro, il movimento del servomotore e l'aggiornamento del display LCD.
+\subsection{Validazione e limitazioni}
 
-Le prove hanno confermato il comportamento previsto dei componenti e dell'interfaccia locale, compreso l'ingresso in modalità \code{MANUAL} senza modificare immediatamente l'apertura della valvola.
-È stato inoltre verificato il funzionamento della comunicazione seriale con il CUS.
+Le prove funzionali sul prototipo hanno confermato il comportamento dei controlli locali, dell'attuatore, del display e della comunicazione con il CUS.
 
-
-
-Tra le limitazioni, il WCS non dispone di un feedback sulla posizione effettiva del servomotore.
-Non è inoltre prevista una gestione automatica delle interruzioni della comunicazione seriale: il WCS può mantenere l'ultimo stato  ricevuto e il ripristino del collegamento può richiedere il riavvio del CUS e del WCS.
-
+Il WCS non dispone di un feedback sulla posizione effettiva del servomotore e non gestisce automaticamente il ripristino delle interruzioni della comunicazione seriale.

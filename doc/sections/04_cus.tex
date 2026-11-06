@@ -138,18 +138,10 @@ Le richieste ricevute tramite seriale vengono invece elaborate dal controller, c
 
 
 
-
-\subsection{Validazione, test e limitazioni}%
+\subsection{Validazione e limitazioni}%
 \label{subsec:cus-validation}
-Il CUS è stato verificato attraverso test unitari JUnit, dedicati alla politica automatica, alla gestione dello stato e all'interpretazione dei messaggi MQTT.
 
-I test coprono le transizioni tra modalità operative, il comportamento alle soglie L1 e L2, le scadenze T1 e T2, la gestione delle misure non valide e dei comandi manuali.
-Sono inoltre verificate la sincronizzazione degli aggiornamenti destinati al WCS e la coerenza del recupero dopo T2.
-Tutti i test unitari eseguiti sono stati superati.
+La politica automatica, la gestione dello stato e l'interpretazione dei messaggi MQTT sono state verificate attraverso test unitari JUnit, superati con esito positivo.
 
-Le verifiche unitarie non comprendono il funzionamento integrato con broker MQTT, dispositivi fisici e dashboard,che richiede prove separate.
-
-Tra le limitazioni del prototipo, il CUS non dispone di un riscontro sulla posizione effettiva della valvola.
-La comunicazione seriale non prevede meccanismi automatici di riconnessione e ritrasmissione dei messaggi non
-consegnati.
-I servizi HTTP e MQTT non implementano autenticazione o cifratura delle comunicazioni.
+Il CUS non dispone di un feedback sulla posizione effettiva della valvola.
+La comunicazione seriale non prevede un recupero automatico delle interruzioni e i servizi HTTP e MQTT non implementano autenticazione o cifratura.

@@ -100,7 +100,7 @@ Le operazioni disponibili sono riportate nella Tabella~\ref{tab:http-api}.
 \end{table}
 
 Le richieste di modifica vengono accettate o rifiutate dal CUS in base allo stato corrente.
-Il DBS aggiorna la propria rappresentazione utilizzando le informazioni restituite dal backend.
+Il DBS aggiorna le informazioni visualizzate attraverso successive richieste di lettura dello stato.
 
 \FloatBarrier%
 
@@ -109,53 +109,32 @@ Il DBS aggiorna la propria rappresentazione utilizzando le informazioni restitui
 
 \paragraph{Avvio e sincronizzazione.}
 
-All'avvio il CUS inizializza lo stato in modalità \code{AUTOMATIC}, mentre il WCS mantiene la valvola chiusa fino alla ricezione di uno stato valido.
-La sincronizzazione avviene attraverso lo scambio dei messaggi \code{READY} e \code{STATE}.
+All'avvio il CUS inizializza il sistema in modalità \code{AUTOMATIC}, mentre il WCS mantiene la valvola chiusa fino alla ricezione di uno stato valido.
+La sincronizzazione avviene attraverso i messaggi \code{READY} e \code{STATE}.
 
-Il DBS acquisisce autonomamente lo stato tramite HTTP, abilitando i controlli in base alla modalità e alla disponibilità del CUS.
-
-\paragraph{Controllo automatico.}
-
-Le misure del TMS vengono elaborate dal CUS secondo la politica descritta nella Sezione~\ref{subsec:cus-policy}.
-Le variazioni dell'apertura vengono comunicate al WCS, mentre il DBS rileva gli aggiornamenti attraverso le proprie richieste periodiche.
-
-La scadenza di T1 può determinare una variazione dell'apertura anche senza la ricezione di una nuova misura.
+Il DBS acquisisce autonomamente lo stato tramite HTTP e abilita i controlli in base alla modalità operativa e alla disponibilità del CUS.
 
 \paragraph{Controllo locale e remoto.}
 
-L'operatore può richiedere il cambio di modalità e la regolazione dell'apertura attraverso il WCS o il DBS.
-Entrambe le interfacce inviano le richieste al CUS, che gestisce lo stato condiviso e determina il comando effettivo.
+Il WCS e il DBS permettono entrambi di richiedere il cambio di modalità e la regolazione dell'apertura.
+Le richieste vengono elaborate dal CUS, senza una priorità prestabilita tra le due interfacce.
 
-Non è prevista una priorità fissa tra operatore locale e remoto.
-Le richieste concorrenti vengono gestite dal controller e le interfacce si aggiornano in base allo stato ricevuto.
+Il WCS riceve gli aggiornamenti tramite seriale, mentre il DBS consulta periodicamente lo stato tramite HTTP.
+Entrambe le interfacce fanno quindi riferimento alle decisioni del controller.
 
 \paragraph{Indisponibilità delle misure.}
 
-In assenza di misure valide per almeno T2, il CUS passa allo stato \code{UNCONNECTED} e imposta l'apertura al \(5\%\).
-La condizione viene comunicata al WCS e resa disponibile al DBS.
+I messaggi \code{NO\_ECHO} rendono il livello corrente non disponibile e azzerano la politica automatica, senza modificare immediatamente l'apertura né rinnovare T2.
 
-I messaggi \code{NO\_ECHO} indicano invece una misura non valida: rendono il livello corrente non disponibile e azzerano la politica automatica, senza modificare immediatamente l'apertura né rinnovare T2.
+In assenza di misure valide per almeno T2, il CUS passa a \code{UNCONNECTED} e imposta l'apertura al \(5\%\).
+La condizione viene comunicata al WCS e resa disponibile al DBS.
 
 Alla prima misura valida dopo T2, il CUS ripristina \code{AUTOMATIC} e rivaluta il livello a partire dal fallback interno al \(5\%\).
 
 \paragraph{Interruzioni delle comunicazioni.}
 
-Se il DBS non riesce a comunicare con il CUS, mostra la condizione \code{NOT AVAILABLE}, senza modificare lo stato degli altri sottosistemi.
+Se il DBS non riesce a comunicare con il CUS, mostra \code{NOT AVAILABLE}, senza modificare lo stato degli altri sottosistemi.
 
-Un'interruzione della comunicazione seriale non impedisce al CUS di continuare a elaborare le misure del TMS e le richieste HTTP, ma il WCS può mantenere l'ultimo comando ricevuto.
+Un'interruzione della comunicazione seriale non impedisce al CUS di elaborare le misure del TMS e le richieste HTTP, ma il WCS può mantenere l'ultimo comando ricevuto.
 
-Analogamente, l'indisponibilità del TMS non implica necessariamente quella del CUS o della dashboard.
-Le diverse condizioni vengono quindi gestite separatamente.
-
-\subsection{Validazione end-to-end e copertura dei requisiti}%
-\label{subsec:integration-validation}
-
-La validazione del progetto comprende test unitari del CUS e prove funzionali dei sottosistemi hardware e dell'interfaccia web, descritti nei rispettivi capitoli.
-
-Sono stati verificati il funzionamento dei controlli locali del WCS, la comunicazione con il CUS, l'interazione tramite dashboard e la gestione delle condizioni di indisponibilità e ripristino.
-Le verifiche del CUS comprendono inoltre la politica automatica, i timeout e la gestione delle richieste.
-
-Queste prove forniscono riscontri sul funzionamento dei singoli sottosistemi e di alcune loro interazioni.
-Non è tuttavia disponibile una documentazione sistematica di una verifica end-to-end completa, dall'acquisizione della misura sul TMS fino all'attuazione fisica e alla visualizzazione simultanea sul DBS.
-
-La validazione complessiva rimane quindi limitata alle funzionalità e alle condizioni effettivamente verificate, senza estendere i risultati alle situazioni non sottoposte a prova.
+L'indisponibilità del TMS non implica quindi necessariamente quella del CUS o del DBS.
