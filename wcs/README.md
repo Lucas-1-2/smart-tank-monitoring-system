@@ -4,7 +4,7 @@ Arduino UNO implementation of the Water Channel Subsystem for Assignment 03.
 
 ## Architecture
 
-The implementation follows the same architecture used in the Smart Drone Hangar project:
+The implementation implements the following architecture:
 
 - cooperative `Scheduler`
 - small shared `Context`
