@@ -23,8 +23,7 @@ Il DBS permette il monitoraggio e il controllo remoto attraverso un'interfaccia 
 La comunicazione tra TMS e CUS avviene tramite MQTT, utilizzando un broker per lo scambio delle misure.
 Il WCS comunica con il CUS attraverso una connessione seriale, inviando le richieste dell'operatore e ricevendo gli aggiornamenti di stato necessari al controllo dell'attuatore e del display.
 
-Il DBS comunica con il CUS tramite HTTP, recuperando periodicamente lo stato del sistema e lo storico delle misure.
-Attraverso la stessa interfaccia può inviare richieste di cambio modalità e regolazione dell'apertura.
+Il DBS utilizza HTTP per il monitoraggio remoto e l'invio dei comandi dell'operatore.
 
 I dettagli dei protocolli e dei messaggi sono descritti nella Sezione~\ref{subsec:integration-contracts}.
 
@@ -37,8 +36,6 @@ Il DBS distingue questa condizione dalla propria indisponibilità di comunicazio
 Il backend può quindi essere raggiungibile anche quando le misure del TMS non sono disponibili.
 
 \subsection{Scelte architetturali}
-
-Le richieste degli operatori locali e remoti vengono valutate dal CUS in base allo stato corrente, senza una priorità prestabilita tra le due interfacce.
 
 Nel backend, la logica di controllo è separata dai servizi di comunicazione.
 L'accesso allo stato condiviso è sincronizzato per gestire le operazioni concorrenti, mantenendo le operazioni di comunicazione al di fuori delle sezioni critiche.

@@ -11,13 +11,13 @@ Nel funzionamento automatico, il TMS invia le misure attraverso il broker MQTT.
 Il CUS le elabora, aggiorna lo stato del sistema e, quando necessario, trasmette al WCS il nuovo comando di apertura.
 Il WCS aggiorna di conseguenza il servomotore e il display LCD.
 
-Il DBS consulta periodicamente lo stato e lo storico tramite HTTP, indipendentemente dall'aggiornamento del WCS.
+Il DBS consulta il CUS tramite HTTP indipendentemente dagli aggiornamenti seriali al WCS.
 La Figura~\ref{fig:sequence} rappresenta il flusso delle informazioni tra i sottosistemi.
 
 \begin{figure}[htbp]
 \centering
 \input{figures/integration_sequence}
-\caption{Sequenza logica di una misura che determina un aggiornamento del sistema. La consultazione del DBS è indipendente dall'attuazione sul WCS}%
+\caption{Sequenza logica di una misura che determina un aggiornamento del sistema}%
 \label{fig:sequence}
 \end{figure}
 
@@ -64,15 +64,13 @@ I principali messaggi sono riportati nella Tabella~\ref{tab:serial-protocol}.
 \caption{Principali messaggi del protocollo seriale tra WCS e CUS}%
 \label{tab:serial-protocol}
 \end{table}
+\FloatBarrier
 
-I comandi inviati dal WCS vengono valutati dal CUS, che restituisce lo stato corrente del sistema.
 Il messaggio \code{STATE} rappresenta quindi lo stato definito dal controller, non una conferma dell'effettiva posizione del servomotore.
 
 \paragraph{HTTP.}
 
-Il DBS utilizza le API HTTP del CUS per consultare lo stato del sistema, recuperare lo storico delle misure e inviare richieste dell'operatore.
-
-Le operazioni disponibili sono riportate nella Tabella~\ref{tab:http-api}.
+Le operazioni HTTP disponibili al DBS sono riportate nella Tabella~\ref{tab:http-api}.
 
 \begin{table}[htbp]
 \centering
@@ -99,9 +97,6 @@ Le operazioni disponibili sono riportate nella Tabella~\ref{tab:http-api}.
 \label{tab:http-api}
 \end{table}
 
-Le richieste di modifica vengono accettate o rifiutate dal CUS in base allo stato corrente.
-Il DBS aggiorna le informazioni visualizzate attraverso successive richieste di lettura dello stato.
-
 \FloatBarrier%
 
 \subsection{Scenari operativi e gestione delle interruzioni}%
@@ -112,24 +107,18 @@ Il DBS aggiorna le informazioni visualizzate attraverso successive richieste di 
 All'avvio il CUS inizializza il sistema in modalità \code{AUTOMATIC}, mentre il WCS mantiene la valvola chiusa fino alla ricezione di uno stato valido.
 La sincronizzazione avviene attraverso i messaggi \code{READY} e \code{STATE}.
 
-Il DBS acquisisce autonomamente lo stato tramite HTTP e abilita i controlli in base alla modalità operativa e alla disponibilità del CUS.
+Il DBS acquisisce lo stato iniziale dal CUS attraverso il collegamento HTTP.
 
 \paragraph{Controllo locale e remoto.}
 
 Il WCS e il DBS permettono entrambi di richiedere il cambio di modalità e la regolazione dell'apertura.
-Le richieste vengono elaborate dal CUS, senza una priorità prestabilita tra le due interfacce.
-
-Il WCS riceve gli aggiornamenti tramite seriale, mentre il DBS consulta periodicamente lo stato tramite HTTP.
-Entrambe le interfacce fanno quindi riferimento alle decisioni del controller.
+Le richieste vengono valutate dal CUS in base allo stato corrente, senza una priorità prestabilita tra le due interfacce.
 
 \paragraph{Indisponibilità delle misure.}
 
-I messaggi \code{NO\_ECHO} rendono il livello corrente non disponibile e azzerano la politica automatica, senza modificare immediatamente l'apertura né rinnovare T2.
-
-In assenza di misure valide per almeno T2, il CUS passa a \code{UNCONNECTED} e imposta l'apertura al \(5\%\).
-La condizione viene comunicata al WCS e resa disponibile al DBS.
-
-Alla prima misura valida dopo T2, il CUS ripristina \code{AUTOMATIC} e rivaluta il livello a partire dal fallback interno al \(5\%\).
+La gestione delle letture non valide e del timeout T2 è descritta nella Sezione~\ref{subsec:cus-recovery}.
+Il passaggio a \code{UNCONNECTED} viene comunicato al WCS insieme all'apertura di fallback e reso disponibile al DBS, che segnala anche l'indisponibilità del livello.
+Il ripristino delle misure si riflette nei successivi aggiornamenti di entrambe le interfacce.
 
 \paragraph{Interruzioni delle comunicazioni.}
 
@@ -138,3 +127,8 @@ Se il DBS non riesce a comunicare con il CUS, mostra \code{NOT AVAILABLE}, senza
 Un'interruzione della comunicazione seriale non impedisce al CUS di elaborare le misure del TMS e le richieste HTTP, ma il WCS può mantenere l'ultimo comando ricevuto.
 
 L'indisponibilità del TMS non implica quindi necessariamente quella del CUS o del DBS.
+
+\subsection{Validazione del sistema integrato}
+
+Il prototipo completo è stato sottoposto a prove funzionali con i quattro sottosistemi collegati e operativi.
+Il video dimostrativo richiamato nell'\hyperref[sec:introduction]{introduzione} documenta il funzionamento congiunto del sistema negli scenari mostrati.

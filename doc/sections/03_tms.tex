@@ -1,4 +1,4 @@
-\section{Tank Monitoring Subsystem (TMS)}
+\section{Tank Monitoring Subsystem (TMS)}%
 \label{sec:tms}
 
 Il Tank Monitoring Subsystem (TMS) acquisisce periodicamente
@@ -6,7 +6,7 @@ il livello di riempimento della tanica e comunica le misure
 al CUS tramite MQTT.
 
 
-\subsection{Architettura software}
+\subsection{Architettura software}%
 \label{subsec:tms-architecture}
 
 Il firmware è organizzato in due task FreeRTOS eseguiti
@@ -56,7 +56,7 @@ Eventuali errori nella creazione delle risorse RTOS
 vengono rilevati e segnalati durante l'avvio.
 
 
-\subsection{Circuito e componenti hardware}
+\subsection{Circuito e componenti hardware}%
 \label{subsec:tms-hardware}
 
 Il prototipo comprende una scheda ESP32, un sonar
@@ -69,16 +69,14 @@ come mostrato nella Figura~\ref{fig:tms-wiring}.
     \centering
 
     \includegraphics[
-        width=0.96\linewidth
+        width=0.64\linewidth
     ]{figures/tms_wiring.png}
 
-    \caption{Cablaggio del TMS: ESP32, sonar HC-SR04
-    e LED di stato.}
+    \caption{Cablaggio del TMS: ESP32, sonar HC-SR04 e LED di stato.}
     \label{fig:tms-wiring}
 \end{figure}
 
-La Tabella~\ref{tab:tms-pins} riassume
-l'assegnazione dei segnali.
+La Tabella~\ref{tab:tms-pins} riassume l'assegnazione dei segnali.
 
 \begin{table}[H]
     \centering
@@ -90,14 +88,13 @@ l'assegnazione dei segnali.
         \textbf{GPIO} & \textbf{Collegamento} \\
         \midrule
 
-        5  & Segnale TRIG del sonar. \\
+        5  & Segnale TRIG del sonar \\
 
-        18 & Segnale ECHO del sonar,
-             attraverso il partitore resistivo. \\
+        18 & Segnale ECHO del sonar, attraverso il partitore resistivo \\
 
-        25 & LED verde. \\
+        25 & LED verde \\
 
-        26 & LED rosso. \\
+        26 & LED rosso \\
 
         \bottomrule
     \end{tabularx}
@@ -114,11 +111,11 @@ Ogni LED utilizza una resistenza in serie
 da \(220\,\Omega\) per limitare la corrente.
 
 
-\subsection{Task del firmware}
+\subsection{Task del firmware}%
 \label{subsec:tms-tasks}
 
 
-\subsubsection{CommunicationTask}
+\subsubsection{CommunicationTask}%
 \label{subsec:tms-communication}
 
 La logica di comunicazione è descritta da una macchina
@@ -129,17 +126,17 @@ Gli stati principali sono:
 
 \begin{itemize}
     \item \texttt{WIFI\_CONNECTING}: attesa della
-    connessione alla rete Wi-Fi;
+    connessione alla rete Wi-Fi
 
     \item \texttt{MQTT\_CONNECTING}: connessione
-    al broker MQTT;
+    al broker MQTT
 
     \item \texttt{WAITING\_FIRST\_PUBLISH}: connessione
     MQTT stabilita, in attesa della prima pubblicazione
-    riuscita;
+    riuscita
 
     \item \texttt{COMMUNICATION\_OK}: comunicazione
-    operativa dopo la prima pubblicazione riuscita.
+    operativa dopo la prima pubblicazione riuscita
 \end{itemize}
 
 La Figura~\ref{fig:tms-communication-fsm} mostra
@@ -155,7 +152,7 @@ la macchina a stati del task.
             keepaspectratio
         ]{figures/communication_fsm.png}
 
-        \caption{FSM del CommunicationTask.}
+        \caption{FSM del CommunicationTask.}%
         \label{fig:tms-communication-fsm}
     \end{figure}
 \end{landscape}
@@ -194,7 +191,7 @@ Una lettura non valida viene segnalata mediante:
 \end{verbatim}
 
 
-\subsubsection{WaterLevelTask}
+\subsubsection{WaterLevelTask}%
 \label{subsec:tms-water-level}
 
 Il task acquisisce periodicamente la distanza dalla
@@ -230,7 +227,7 @@ di tanica vuota, che corrisponde invece a una lettura
 valida con \(d = H\).
 
 
-\subsection{Test, criticità e taratura}
+\subsection{Test, criticità e taratura}%
 \label{subsec:tms-tests}
 
 \paragraph{Allestimento e verifica delle misure.}

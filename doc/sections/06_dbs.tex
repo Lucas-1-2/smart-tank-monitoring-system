@@ -2,17 +2,13 @@
 \section{Dashboard Subsystem (DBS)}%
 \label{sec:dbs}
 
-Il DBS permette di monitorare e controllare il sistema attraverso un'interfaccia web.
-Visualizza la modalità operativa, il livello dell'acqua, l'apertura comandata della valvola e lo storico delle misure.
-Consente inoltre all'operatore di inviare richieste al CUS, che mantiene il controllo dello stato globale.
+Il DBS è l'interfaccia web per il monitoraggio del livello dell'acqua, della modalità operativa, dell'apertura comandata e dello storico, e per l'invio di richieste al CUS.
 
 \subsection{Architettura dell'interfaccia web}
 
-Il DBS è sviluppato con HTML, CSS e JavaScript, senza l'utilizzo di framework frontend.
-L'interfaccia comprende pannelli informativi, controlli per l'operatore e un grafico per la visualizzazione dello storico.
-
-Il codice JavaScript è organizzato in moduli che separano la comunicazione HTTP, la gestione dell'interfaccia e l'aggiornamento del grafico.
-Quest'ultimo utilizza Chart.js, incluso localmente nel progetto.
+L'interfaccia è sviluppata con HTML, CSS e JavaScript, senza framework frontend.
+Comprende pannelli informativi, controlli per l'operatore e un grafico per la visualizzazione dello storico.
+Moduli distinti gestiscono la comunicazione HTTP, l'interfaccia e il grafico dello storico, realizzato con Chart.js incluso localmente.
 
 \subsection{Comunicazione HTTP e gestione dello stato}%
 \label{subsec:dbs-state}
@@ -37,10 +33,9 @@ L'interfaccia mette a disposizione un pulsante per richiedere il cambio tra le m
 Lo slider è abilitato soltanto in modalità \code{MANUAL}, quando il CUS è disponibile.
 Durante la regolazione viene mostrato il valore selezionato, mentre la richiesta di apertura viene inviata al termine della modifica.
 
-Le richieste dell'operatore vengono elaborate dal CUS.
 La dashboard aggiorna i valori del sistema sulla base dello stato restituito dal backend, senza considerare automaticamente applicato un comando appena inviato.
 
 Durante l'elaborazione delle richieste, i relativi controlli vengono temporaneamente disabilitati.
 
-Il funzionamento dell'interfaccia è stato verificato attraverso prove funzionali, comprese le condizioni di indisponibilità e ripristino del CUS.
-Il DBS non verifica direttamente la disponibilità del WCS né la posizione effettiva della valvola.
+Le prove funzionali hanno verificato l'interfaccia anche durante l'indisponibilità e il ripristino del CUS.
+Il DBS non verifica direttamente la disponibilità del WCS.

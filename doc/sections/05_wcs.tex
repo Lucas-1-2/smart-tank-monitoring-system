@@ -105,8 +105,7 @@ Prima di rendere operativi i controlli locali, il sistema si sincronizza con il 
 Il pulsante permette di richiedere il cambio tra le modalità \code{AUTOMATIC} e \code{MANUAL}.
 In modalità \code{MANUAL}, il potenziometro consente di richiedere una diversa apertura della valvola.
 
-Le richieste vengono inviate al CUS, che ne determina l'accettazione.
-Il WCS aggiorna servomotore e display soltanto in base allo stato successivamente ricevuto, mantenendo il controllo centralizzato del sistema.
+Il WCS aggiorna servomotore e display soltanto in base allo stato ricevuto dal CUS.
 
 Il task \code{ValveTask} converte la percentuale di apertura comandata, compresa tra \(0\%\) e \(100\%\), in un angolo di comando del servomotore tra \(0^\circ\) e \(90^\circ\).
 
